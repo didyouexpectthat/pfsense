@@ -1,56 +1,22 @@
 <?php
 /*
-	firewall_shaper.php
-*/
-/* ====================================================================
- *  Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * firewall_shaper.php
  *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met:
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *  1. Redistributions of source code must retain the above copyright notice,
- *      this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  2. Redistributions in binary form must reproduce the above copyright
- *      notice, this list of conditions and the following disclaimer in
- *      the documentation and/or other materials provided with the
- *      distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  3. All advertising materials mentioning features or use of this software
- *      must display the following acknowledgment:
- *      "This product includes software developed by the pfSense Project
- *       for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *  4. The names "pfSense" and "pfSense Project" must not be used to
- *       endorse or promote products derived from this software without
- *       prior written permission. For written permission, please contact
- *       coreteam@pfsense.org.
- *
- *  5. Products derived from this software may not be called "pfSense"
- *      nor may "pfSense" appear in their names without prior written
- *      permission of the Electric Sheep Fencing, LLC.
- *
- *  6. Redistributions of any form whatsoever must retain the following
- *      acknowledgment:
- *
- *  "This product includes software developed by the pfSense Project
- *  for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *  THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *  EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *  ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *  STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *  OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  ====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -60,7 +26,7 @@
 ##|*MATCH=firewall_shaper.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
 require_once("shaper.inc");
@@ -200,7 +166,7 @@ if ($_GET) {
 		} else if ($addnewaltq) {
 			$q = new altq_root_queue();
 		} else {
-			$input_errors[] = gettext("Could not create new queue/discipline! Did you remember to apply any recent changes?");
+			$input_errors[] = gettext("Could not create new queue/discipline! Any recent changes may need to be applied first.");
 		}
 
 		if ($q) {
@@ -260,27 +226,6 @@ if ($_POST) {
 	if ($addnewaltq) {
 		$altq =& new altq_root_queue();
 		$altq->SetInterface($interface);
-
-		switch ($altq->GetBwscale()) {
-				case "Mb":
-					$factor = 1000 * 1000;
-					break;
-				case "Kb":
-					$factor = 1000;
-					break;
-				case "b":
-					$factor = 1;
-					break;
-				case "Gb":
-					$factor = 1000 * 1000 * 1000;
-					break;
-				case "%": /* We don't use it for root_XXX queues. */
-				default: /* XXX assume Kb by default. */
-					$factor = 1000;
-					break;
-			}
-
-		$altq->SetAvailableBandwidth($altq->GetBandwidth() * $factor);
 		$altq->ReadConfig($_POST);
 		$altq->validate_input($_POST, $input_errors);
 		if (!$input_errors) {
@@ -429,7 +374,7 @@ if ($savemsg) {
 }
 
 if (is_subsystem_dirty('shaper')) {
-	print_apply_box(gettext("The traffic shaper configuration has been changed.") . "<br />" . gettext("You must apply the changes in order for them to take effect."));
+	print_apply_box(gettext("The traffic shaper configuration has been changed.") . "<br />" . gettext("The changes must be applied for them to take effect."));
 }
 
 $tab_array = array();
@@ -440,7 +385,7 @@ $tab_array[] = array(gettext("Wizards"), false, "firewall_shaper_wizards.php");
 display_top_tabs($tab_array);
 
 ?>
-<script type="text/javascript" src="./tree/tree.js"></script>
+<script type="text/javascript" src="./vendor/tree/tree.js"></script>
 
 <div class="table-responsive">
 	<table class="table">

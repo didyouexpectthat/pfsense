@@ -1,57 +1,23 @@
 <?php
 /*
-	vpn_openvpn_client.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
- *  Copyright (c)  2008 Shrew Soft Inc.
+ * vpn_openvpn_client.php
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * Copyright (c) 2008 Shrew Soft Inc.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -61,7 +27,7 @@
 ##|*MATCH=vpn_openvpn_client.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once("openvpn.inc");
 require_once("pkg-utils.inc");
 
@@ -217,9 +183,9 @@ if ($_POST) {
 
 	list($iv_iface, $iv_ip) = explode ("|", $pconfig['interface']);
 	if (is_ipaddrv4($iv_ip) && (stristr($pconfig['protocol'], "6") !== false)) {
-		$input_errors[] = gettext("Protocol and IP address families do not match. You cannot select an IPv6 protocol and an IPv4 IP address.");
+		$input_errors[] = gettext("Protocol and IP address families do not match. An IPv6 protocol and an IPv4 IP address cannot be selected.");
 	} elseif (is_ipaddrv6($iv_ip) && (stristr($pconfig['protocol'], "6") === false)) {
-		$input_errors[] = gettext("Protocol and IP address families do not match. You cannot select an IPv4 protocol and an IPv6 IP address.");
+		$input_errors[] = gettext("Protocol and IP address families do not match. An IPv4 protocol and an IPv6 IP address cannot be selected.");
 	} elseif ((stristr($pconfig['protocol'], "6") === false) && !get_interface_ip($iv_iface) && ($pconfig['interface'] != "any")) {
 		$input_errors[] = gettext("An IPv4 protocol was selected, but the selected interface has no IPv4 address.");
 	} elseif ((stristr($pconfig['protocol'], "6") !== false) && !get_interface_ipv6($iv_iface) && ($pconfig['interface'] != "any")) {
@@ -415,8 +381,8 @@ if ($_POST) {
 			$a_client[] = $client;
 		}
 
-		openvpn_resync('client', $client);
 		write_config();
+		openvpn_resync('client', $client);
 
 		header("Location: vpn_openvpn_client.php");
 		exit;
@@ -462,7 +428,7 @@ if ($act=="new" || $act=="edit"):
 		'Disabled',
 		'Disable this client',
 		$pconfig['disable']
-	))->setHelp('Set this option to disable this client without removing it from the list');
+	))->setHelp('Set this option to disable this client without removing it from the list.');
 
 	$section->addInput(new Form_Select(
 		'mode',
@@ -498,7 +464,7 @@ if ($act=="new" || $act=="edit"):
 		'number',
 		$pconfig['local_port'],
 		['min' => '0']
-	))->setHelp('Set this option if you would like to bind to a specific port. Leave this blank or enter 0 for a random dynamic port.');
+	))->setHelp('Set this option to bind to a specific port. Leave this blank or enter 0 for a random dynamic port.');
 
 	$section->addInput(new Form_Input(
 		'server_addr',
@@ -519,6 +485,13 @@ if ($act=="new" || $act=="edit"):
 		'Proxy host or address',
 		'text',
 		$pconfig['proxy_addr']
+	));
+
+	$section->addInput(new Form_Input(
+		'proxy_port',
+		'Proxy port',
+		number,
+		$pconfig['proxy_port']
 	));
 
 	$section->addInput(new Form_Select(
@@ -555,7 +528,7 @@ if ($act=="new" || $act=="edit"):
 		'Description',
 		'text',
 		$pconfig['description']
-	))->setHelp('You may enter a description here for your reference (not parsed).');
+	))->setHelp('A description may be entered here for administrative reference (not parsed).');
 
 	$form->add($section);
 	$section = new Form_Section('User Authentication Settings');
@@ -599,7 +572,7 @@ if ($act=="new" || $act=="edit"):
 		'tls',
 		'Key',
 		$pconfig['tls']
-	))->setHelp('Paste your shared key here');
+	))->setHelp('Paste the shared key here');
 
 	if (count($a_ca)) {
 		$list = array();
@@ -616,7 +589,7 @@ if ($act=="new" || $act=="edit"):
 	} else {
 		$section->addInput(new Form_StaticText(
 			'Peer Certificate Authority',
-			sprintf('No Certificate Authorities defined. You may create one here: %s', '<a href="system_camanager.php">System &gt; Cert. Manager</a>')
+			sprintf('No Certificate Authorities defined. One may be created here: %s', '<a href="system_camanager.php">System &gt; Cert. Manager</a>')
 		));
 	}
 
@@ -630,7 +603,7 @@ if ($act=="new" || $act=="edit"):
 	} else {
 		$section->addInput(new Form_StaticText(
 			'Peer Certificate Revocation list',
-			sprintf('No Certificate Revocation Lists defined. You may create one here: %s', '<a href="system_crlmanager.php">System &gt; Cert. Manager &gt; Certificate Revocation</a>')
+			sprintf('No Certificate Revocation Lists defined. One may be created here: %s', '<a href="system_crlmanager.php">System &gt; Cert. Manager &gt; Certificate Revocation</a>')
 		));
 	}
 
@@ -645,7 +618,7 @@ if ($act=="new" || $act=="edit"):
 		'shared_key',
 		'Shared Key',
 		$pconfig['shared_key']
-	))->setHelp('Paste your shared key here');
+	))->setHelp('Paste the shared key here');
 
 	$cl = openvpn_build_cert_list(true);
 
@@ -687,7 +660,7 @@ if ($act=="new" || $act=="edit"):
 		'text',
 		$pconfig['tunnel_network']
 	))->setHelp('This is the IPv4 virtual network used for private communications between this client and the server ' .
-				'expressed using CIDR (eg. 10.0.8.0/24). The second network address will be assigned to ' .
+				'expressed using CIDR (e.g. 10.0.8.0/24). The second network address will be assigned to ' .
 				'the client virtual interface.');
 
 	$section->addInput(new Form_Input(
@@ -696,7 +669,7 @@ if ($act=="new" || $act=="edit"):
 		'text',
 		$pconfig['tunnel_networkv6']
 	))->setHelp('This is the IPv6 virtual network used for private ' .
-				'communications between this client and the server expressed using CIDR (eg. fe80::/64). ' .
+				'communications between this client and the server expressed using CIDR (e.g. fe80::/64). ' .
 				'The second network address will be assigned to the client virtual interface.');
 
 	$section->addInput(new Form_Input(
@@ -706,7 +679,7 @@ if ($act=="new" || $act=="edit"):
 		$pconfig['remote_network']
 	))->setHelp('IPv4 networks that will be routed through the tunnel, so that a site-to-site VPN can be established without manually ' .
 				'changing the routing tables. Expressed as a comma-separated list of one or more CIDR ranges. ' .
-				'If this is a site-to-site VPN, enter the remote LAN/s here. You may leave this blank if you don\'t want a site-to-site VPN.');
+				'If this is a site-to-site VPN, enter the remote LAN/s here. May be left blank for non site-to-site VPN.');
 
 	$section->addInput(new Form_Input(
 		'remote_networkv6',
@@ -715,7 +688,7 @@ if ($act=="new" || $act=="edit"):
 		$pconfig['remote_networkv6']
 	))->setHelp('These are the IPv6 networks that will be routed through the tunnel, so that a site-to-site VPN can be established without manually ' .
 				'changing the routing tables. Expressed as a comma-separated list of one or more IP/PREFIX. ' .
-				'If this is a site-to-site VPN, enter the remote LAN/s here. You may leave this blank if you don\'t want a site-to-site VPN.');
+				'If this is a site-to-site VPN, enter the remote LAN/s here. May be left blank for non site-to-site VPN.');
 
 	$section->addInput(new Form_Input(
 		'use_shaper',
@@ -765,7 +738,7 @@ if ($act=="new" || $act=="edit"):
 		'Don\'t add/remove routes',
 		'Don\'t add or remove routes automatically',
 		$pconfig['route_no_exec']
-	))->setHelp('Pass routes to --route-upscript using environmental variables');
+	))->setHelp('Pass routes to --route-upscript using environmental variables.');
 
 	$form->add($section);
 
@@ -776,19 +749,18 @@ if ($act=="new" || $act=="edit"):
 		'custom_options',
 		'Custom options',
 		$pconfig['custom_options']
-	))->setHelp('Enter any additional options you would like to add to the OpenVPN server configuration here, separated by semicolon' . '<br />' .
-				'EXAMPLE: push "route 10.0.0.0 255.255.255.0"');
+	))->setHelp('Enter any additional options to add to the OpenVPN client configuration here, separated by semicolon.');
 
 	$section->addInput(new Form_Select(
 		'verbosity_level',
 		'Verbosity level',
 		$pconfig['verbosity_level'],
 		$openvpn_verbosity_level
-		))->setHelp('Each level shows all info from the previous levels. Level 3 is recommended if you want a good summary of what\'s happening without being swamped by output' . '<br /><br />' .
+		))->setHelp('Each level shows all info from the previous levels. Level 3 is recommended for a good summary of what\'s happening without being swamped by output.' . '<br /><br />' .
 					'None: Only fatal errors' . '<br />' .
-					'Default: Normal usage range' . '<br />' .
-					'5: Output R and W characters to the console for each packet read and write, uppercase is used for TCP/UDP packets and lowercase is used for TUN/TAP packets' .'<br />' .
-					'6: Debug info range');
+					'Default through 4: Normal usage range' . '<br />' .
+					'5: Output R and W characters to the console for each packet read and write. Uppercase is used for TCP/UDP packets and lowercase is used for TUN/TAP packets.' .'<br />' .
+					'6-11: Debug info range');
 
 	$section->addInput(new Form_Input(
 		'act',
@@ -813,7 +785,7 @@ else:
 <div class="panel panel-default">
 	<div class="panel-heading"><h2 class="panel-title"><?=gettext('OpenVPN Clients')?></h2></div>
 		<div class="panel-body table-responsive">
-		<table class="table table-striped table-hover table-condensed sortable-theme-bootstrap" data-sortable>
+		<table class="table table-striped table-hover table-condensed sortable-theme-bootstrap table-rowdblclickedit" data-sortable>
 			<thead>
 				<tr>
 					<th><?=gettext("Protocol")?></th>
@@ -882,6 +854,7 @@ events.push(function() {
 				hideCheckbox('autokey_enable', true);
 				hideInput('shared_key', true);
 				hideLabel('Peer Certificate Revocation list', true);
+				hideInput('topology', false);
 				break;
 			case "p2p_shared_key":
 				hideCheckbox('tlsauth_enable', true);
@@ -891,16 +864,19 @@ events.push(function() {
 				hideCheckbox('autokey_enable', false);
 				hideInput('shared_key', false);
 				hideLabel('Peer Certificate Revocation list', false);
+				hideInput('topology', true);
 				break;
 		}
 
 		tlsauth_change();
 		autokey_change();
+		dev_mode_change();
+
 	}
 
 	function dev_mode_change() {
 		hideCheckbox('no_tun_ipv6', ($('#dev_mode').val() == 'tap'));
-		hideInput('topology',  ($('#dev_mode').val() == 'tap'));
+		hideInput('topology',  ($('#dev_mode').val() == 'tap') || $('#mode').val() == "p2p_shared_key");
 	}
 
 	// Process "Automatically generate a shared key" checkbox

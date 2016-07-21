@@ -1,59 +1,26 @@
 <?php
 /*
-	firewall_nat_out_edit.php
-*/
-/* ====================================================================
- *  Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * firewall_nat_out_edit.php
  *
- *  Some or all of this file is based on the m0n0wall project which is
- *  Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *  1. Redistributions of source code must retain the above copyright notice,
- *      this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  2. Redistributions in binary form must reproduce the above copyright
- *      notice, this list of conditions and the following disclaimer in
- *      the documentation and/or other materials provided with the
- *      distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  3. All advertising materials mentioning features or use of this software
- *      must display the following acknowledgment:
- *      "This product includes software developed by the pfSense Project
- *       for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *  4. The names "pfSense" and "pfSense Project" must not be used to
- *       endorse or promote products derived from this software without
- *       prior written permission. For written permission, please contact
- *       coreteam@pfsense.org.
- *
- *  5. Products derived from this software may not be called "pfSense"
- *      nor may "pfSense" appear in their names without prior written
- *      permission of the Electric Sheep Fencing, LLC.
- *
- *  6. Redistributions of any form whatsoever must retain the following
- *      acknowledgment:
- *
- *  "This product includes software developed by the pfSense Project
- *  for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *  THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *  EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *  ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *  STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *  OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  ====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -63,10 +30,10 @@
 ##|*MATCH=firewall_nat_out_edit.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once("ipsec.inc");
 require_once("filter.inc");
-require("shaper.inc");
+require_once("shaper.inc");
 
 if (!is_array($config['nat']['outbound'])) {
 	$config['nat']['outbound'] = array();
@@ -81,11 +48,13 @@ $a_out = &$config['nat']['outbound']['rule'];
 if (!is_array($config['aliases']['alias'])) {
 	$config['aliases']['alias'] = array();
 }
+
 $a_aliases = &$config['aliases']['alias'];
 
 if (is_numericint($_GET['id'])) {
 	$id = $_GET['id'];
 }
+
 if (isset($_POST['id']) && is_numericint($_POST['id'])) {
 	$id = $_POST['id'];
 }
@@ -93,6 +62,7 @@ if (isset($_POST['id']) && is_numericint($_POST['id'])) {
 if (is_numericint($_GET['after']) || $_GET['after'] == "-1") {
 	$after = $_GET['after'];
 }
+
 if (isset($_POST['after']) && (is_numericint($_POST['after']) || $_POST['after'] == "-1")) {
 	$after = $_POST['after'];
 }
@@ -204,15 +174,15 @@ if ($_POST) {
 	}
 
 	if ($protocol_uses_ports && $_POST['sourceport'] <> "" && !(is_portoralias($_POST['sourceport']) || is_portrange($_POST['sourceport']))) {
-		$input_errors[] = gettext("You must supply either a valid port or port alias for the source port entry.");
+		$input_errors[] = gettext("A valid port or port alias must be supplied for the source port entry.");
 	}
 
 	if ($protocol_uses_ports && $_POST['dstport'] <> "" && !(is_portoralias($_POST['dstport']) || is_portrange($_POST['dstport']))) {
-		$input_errors[] = gettext("You must supply either a valid port or port alias for the destination port entry.");
+		$input_errors[] = gettext("A valid port or port alias must be supplied for the destination port entry.");
 	}
 
 	if ($protocol_uses_ports && $_POST['natport'] <> "" && !(is_portoralias($_POST['natport']) || is_portrange($_POST['natport'])) && !isset($_POST['nonat'])) {
-		$input_errors[] = gettext("You must supply a valid port for the NAT port entry.");
+		$input_errors[] = gettext("A valid port must be supplied for the NAT port entry.");
 	}
 
 	if (($_POST['source_type'] != "any") && ($_POST['source_type'] != "(self)")) {
@@ -454,8 +424,8 @@ $section->addInput(new Form_Checkbox(
 	'nonat',
 	'Do not NAT',
 	'Enabling this option will disable NAT for traffic matching this rule and stop processing Outbound NAT rules',
-	$pconfig['nonat']
-))->setHelp('In most cases this option is not required');
+	isset($pconfig['nonat'])
+))->setHelp('In most cases this option is not required.');
 
 $iflist = get_configured_interface_with_descr(false, true);
 
@@ -554,7 +524,7 @@ $section->addInput(new Form_Checkbox(
 	null,
 	'Not',
 	$pconfig['destination_not']
-))->setHelp('Invert the sense of the destination match');
+))->setHelp('Invert the sense of the destination match.');
 
 $form->add($section);
 
@@ -574,10 +544,10 @@ $section->addInput(new Form_IpAddress(
 	$pconfig['targetip']
 ))->addMask('targetip_subnet', $pconfig['targetip_subnet'])->addClass('othersubnet')->setHelp(
 		'Packets matching this rule will be mapped to the IP address given here.' . '<br />' .
-		'If you want this rule to apply to another IP address rather than the IP address of the interface chosen above, ' .
-		'select it here (you will need to define ' .
+		'To apply this rule to a different IP address than the IP address of the interface chosen above, ' .
+		'select it here (' .
 		'<a href="firewall_virtual_ip.php">' . gettext("Virtual IP") . '</a> ' .
-		'addresses on the interface first)');
+		'addresses need to be defined on the interface first)');
 
 $section->addInput(new Form_Select(
 	'poolopts',
@@ -607,10 +577,9 @@ $group->addClass('natportgrp');
 $group->add(new Form_Input(
 	'natport',
 	null,
-	'number',
-	$pconfig['natport'],
-	['min' => '1', 'max' => '65536']
-))->setHelp('Enter the source port for the outbound NAT mapping.');
+	'text',
+	$pconfig['natport']
+))->setHelp('Enter the source port or range for the outbound NAT mapping.');
 
 $group->add(new Form_Checkbox(
 	'staticnatport',
@@ -638,7 +607,7 @@ $section->addInput(new Form_Input(
 	'Description',
 	'text',
 	$pconfig['descr']
-))->setHelp('You may enter a description here for your reference (not parsed).');
+))->setHelp('A description may be entered here for administrative reference (not parsed).');
 
 if (isset($id) && $a_out[$id]) {
 	$section->addInput(new Form_Input(
@@ -715,6 +684,9 @@ events.push(function() {
 		if ($('#destination_type').find(":selected").val() == "network") {
 			disableInput('destination', false);
 			disableInput('destination_subnet', false);
+			$('#destination, #source').autocomplete({
+				source: addressarray
+			});
 		} else {
 			$('#destination').val("");
 			disableInput('destination', true);
@@ -799,7 +771,7 @@ events.push(function() {
         source: addressarray
     });
 
-    $('#dstbeginport_cust, #sourceport, #destination, #dstport').autocomplete({
+    $('#sourceport, #dstport').autocomplete({
         source: customarray
     });
 });

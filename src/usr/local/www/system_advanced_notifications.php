@@ -1,56 +1,22 @@
 <?php
 /*
-	system_advanced_notifications.php
-*/
-/* ====================================================================
- *  Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * system_advanced_notifications.php
  *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met:
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *  1. Redistributions of source code must retain the above copyright notice,
- *      this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  2. Redistributions in binary form must reproduce the above copyright
- *      notice, this list of conditions and the following disclaimer in
- *      the documentation and/or other materials provided with the
- *      distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  3. All advertising materials mentioning features or use of this software
- *      must display the following acknowledgment:
- *      "This product includes software developed by the pfSense Project
- *       for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *  4. The names "pfSense" and "pfSense Project" must not be used to
- *       endorse or promote products derived from this software without
- *       prior written permission. For written permission, please contact
- *       coreteam@pfsense.org.
- *
- *  5. Products derived from this software may not be called "pfSense"
- *      nor may "pfSense" appear in their names without prior written
- *      permission of the Electric Sheep Fencing, LLC.
- *
- *  6. Redistributions of any form whatsoever must retain the following
- *      acknowledgment:
- *
- *  "This product includes software developed by the pfSense Project
- *  for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *  THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *  EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *  ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *  STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *  OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  ====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -60,7 +26,7 @@
 ##|*MATCH=system_advanced_notifications.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once("notices.inc");
 
 // Growl
@@ -196,8 +162,7 @@ if ($_POST) {
 
 	if (isset($_POST['test-growl'])) {
 		// Send test message via growl
-		if ($config['notifications']['growl']['ipaddress'] &&
-		    $config['notifications']['growl']['password'] = $_POST['password']) {
+		if (isset($config['notifications']['growl']['ipaddress'])) {
 			unlink_if_exists($g['vardb_path'] . "/growlnotices_lastmsg.txt");
 			register_via_growl();
 			notify_via_growl(sprintf(gettext("This is a test message from %s.  It is safe to ignore this message."), $g['product_name']), true);
@@ -260,15 +225,14 @@ $section->addInput(new Form_Input(
 	$pconfig['notification_name'],
 	['placeholder' => $g["product_name"].' growl alert']
 
-))->setHelp('Enter a name for the Growl notifications');
+))->setHelp('Enter a name for the Growl notifications.');
 
 $section->addInput(new Form_Input(
 	'ipaddress',
 	'IP Address',
 	'text',
 	$pconfig['ipaddress']
-))->setHelp('This is the IP address that you would like to send growl '.
-	'notifications to.');
+))->setHelp('This is the IP address to send growl notifications to.');
 
 $section->addPassword(new Form_Input(
 	'password',
@@ -311,7 +275,7 @@ $section->addInput(new Form_Input(
 	'number',
 	$pconfig['smtpport']
 ))->setHelp('This is the port of the SMTP E-Mail server, typically 25, 587 '.
-	'(submission) or 465 (smtps)');
+	'(submission) or 465 (smtps).');
 
 $group = new Form_Group('Secure SMTP Connection');
 $group->add(new Form_Checkbox(
@@ -342,8 +306,7 @@ $section->addInput(new Form_Input(
 	'Notification E-Mail address',
 	'text',
 	$pconfig['smtpnotifyemailaddress']
-))->setHelp('Enter the e-mail address that you would like email '.
-	'notifications sent to.');
+))->setHelp('Enter the e-mail address to send email notifications to.');
 
 // This name prevents the browser from auto-filling the field. We change it on submit
 $section->addInput(new Form_Input(

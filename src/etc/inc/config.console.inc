@@ -1,58 +1,27 @@
 <?php
 /*
-	config.console.inc
-
-	part of pfSense (https://www.pfsense.org)
-	Copyright (c) 2004-2016 Electric Sheep Fencing, LLC. All rights reserved.
-
-	originally part of m0n0wall (http://m0n0.ch/wall)
-	Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
-	All rights reserved.
-
-	Redistribution and use in source and binary forms, with or without
-	modification, are permitted provided that the following conditions are met:
-
-	1. Redistributions of source code must retain the above copyright notice,
-	   this list of conditions and the following disclaimer.
-
-	2. Redistributions in binary form must reproduce the above copyright
-	   notice, this list of conditions and the following disclaimer in
-	   the documentation and/or other materials provided with the
-	   distribution.
-
-	3. All advertising materials mentioning features or use of this software
-	   must display the following acknowledgment:
-	   "This product includes software developed by the pfSense Project
-	   for use in the pfSense® software distribution. (http://www.pfsense.org/).
-
-	4. The names "pfSense" and "pfSense Project" must not be used to
-	   endorse or promote products derived from this software without
-	   prior written permission. For written permission, please contact
-	   coreteam@pfsense.org.
-
-	5. Products derived from this software may not be called "pfSense"
-	   nor may "pfSense" appear in their names without prior written
-	   permission of the Electric Sheep Fencing, LLC.
-
-	6. Redistributions of any form whatsoever must retain the following
-	   acknowledgment:
-
-	"This product includes software developed by the pfSense Project
-	for use in the pfSense software distribution (http://www.pfsense.org/).
-
-	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
-	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
-	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
-	OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ * config.console.inc
+ *
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
+ *
+ * originally part of m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 function set_networking_interfaces_ports() {
 	global $noreboot;
@@ -114,18 +83,18 @@ EOD;
 		echo <<<EOD
 
 		!!! Installation Media Detected: Auto Interface Option !!!!
-BEGIN MANUAL CONFIGURATION OR WE WILL PROCEED WITH AUTO CONFIGURATION.
+BEGIN MANUAL CONFIGURATION OR THE SYSTEM WILL PROCEED WITH AUTO CONFIGURATION.
 
 EOD;
 	}
 
-	echo "\n" . gettext("Do you want to set up VLANs first?");
+	echo "\n" . gettext("Do VLANs need to be set up first?");
 	echo "\n" .
 		gettext(
-			"If you are not going to use VLANs, or only for optional interfaces, you should\n" .
+			"If VLANs will not be used, or only for optional interfaces, it is typical to\n" .
 			"say no here and use the webConfigurator to configure VLANs later, if required.") .
 		"\n";
-	echo "\n" . gettext("Do you want to set up VLANs now [y|n]?") . " ";
+	echo "\n" . gettext("Should VLANs be set up now [y|n]?") . " ";
 
 	if ($auto_assign) {
 		$key = timeout();
@@ -139,15 +108,14 @@ EOD;
 
    !!! Auto Assigning Interfaces !!!
 
-For installation purposes, you must plug in at least one NIC
-for the LAN connection. If you plug in a second NIC it will be
-assigned to WAN. Otherwise, we'll temporarily assign WAN to the
-next available NIC found regardless of activity. You should
-assign and configure the WAN interface according to your requirements
+For setup purposes, there must be at least one NIC connected for
+the LAN. If a second NIC is connected, it will be assigned to the
+WAN. Otherwise, WAN will be temporarily assigned to the next
+available NIC found regardless of activity. The WAN interface
+should then be assigned and configured as required.
 
-If you haven't plugged in any network cables yet,
-now is the time to do so.
-We'll keep trying until you do.
+Please make the pfSense NIC connections now.
+The system will continue checking until they have been made.
 
 Searching for active interfaces...
 
@@ -179,7 +147,7 @@ EOD;
 Assigned WAN to : $wanif
 Assigned LAN to : $lanif
 
-If you don't like this assignment,
+If these assignments are not suitable,
 press any key to go back to manual configuration.
 
 EOD;
@@ -213,9 +181,9 @@ EOD;
 
 		echo <<<EOD
 
-If you do not know the names of your interfaces, you may choose to use
-auto-detection. In that case, disconnect all interfaces now before
-hitting 'a' to initiate auto detection.
+If the names of the interfaces are not known, auto-detection can
+be used instead. To use auto-detection, please disconnect all
+interfaces before pressing 'a' to begin the process.
 
 EOD;
 
@@ -311,7 +279,7 @@ EOD;
 				if ($ifarr[$i] == $ifarr[$j]) {
 					echo <<<EOD
 
-Error: you cannot assign the same interface name twice!
+Error: The same interface name cannot be assigned twice!
 
 EOD;
 					fclose($fp);
@@ -361,6 +329,9 @@ EOD;
 			}
 			if (isset($config['dhcpd']['lan'])) {
 				unset($config['dhcpd']['lan']);
+			}
+			if (isset($config['dhcpdv6']['lan'])) {
+				unset($config['dhcpdv6']['lan']);
 			}
 			if (isset($config['interfaces']['lan']['if'])) {
 				unset($config['interfaces']['lan']['if']);
@@ -477,7 +448,7 @@ EOD;
 			return;
 		}
 
-		echo gettext("One moment while we reload the settings...");
+		echo gettext("One moment while the settings are reloading...");
 		echo gettext(" done!") . "\n";
 
 		touch("{$g['tmp_path']}/assign_complete");
@@ -576,6 +547,14 @@ function vlan_setup() {
 			continue;
 		}
 
+		if (is_array($config['vlans']['vlan'])) {
+			foreach ($config['vlans']['vlan'] as $existingvlan) {
+				if ($vlan['if'] == $existingvlan['if'] && $vlan['tag'] == $existingvlan['tag']) {
+					printf("\n\n" . gettext("This parent interface and VLAN already created."));
+					continue 2;
+				}
+			}
+		}
 		$config['vlans']['vlan'][] = $vlan;
 		$vlanif++;
 	}

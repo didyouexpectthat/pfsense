@@ -1,57 +1,23 @@
 <?php
 /*
-	services_unbound_advanced.php
-*/
-/* ====================================================================
- *  Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
- *  Copyright (c)  2015  Warren Baker (warren@percol8.co.za)
+ * services_unbound_advanced.php
  *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met:
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * Copyright (c) 2014 Warren Baker (warren@pfsense.org)
+ * All rights reserved.
  *
- *  1. Redistributions of source code must retain the above copyright notice,
- *      this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  2. Redistributions in binary form must reproduce the above copyright
- *      notice, this list of conditions and the following disclaimer in
- *      the documentation and/or other materials provided with the
- *      distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  3. All advertising materials mentioning features or use of this software
- *      must display the following acknowledgment:
- *      "This product includes software developed by the pfSense Project
- *       for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *  4. The names "pfSense" and "pfSense Project" must not be used to
- *       endorse or promote products derived from this software without
- *       prior written permission. For written permission, please contact
- *       coreteam@pfsense.org.
- *
- *  5. Products derived from this software may not be called "pfSense"
- *      nor may "pfSense" appear in their names without prior written
- *      permission of the Electric Sheep Fencing, LLC.
- *
- *  6. Redistributions of any form whatsoever must retain the following
- *      acknowledgment:
- *
- *  "This product includes software developed by the pfSense Project
- *  for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *  THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *  EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *  ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *  STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *  OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  ====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -147,7 +113,7 @@ if ($_POST) {
 		if (isset($_POST['infra_host_ttl']) && !in_array($_POST['infra_host_ttl'], array('60', '120', '300', '600', '900'), true)) {
 			$input_errors[] = gettext("A valid value must be specified for TTL for Host Cache Entries.");
 		}
-		if (isset($_POST['infra_cache_numhosts']) && !in_array($_POST['infra_cache_numhosts'], array('1000', '5000', '10000', '20000', '50000'), true)) {
+		if (isset($_POST['infra_cache_numhosts']) && !in_array($_POST['infra_cache_numhosts'], array('1000', '5000', '10000', '20000', '50000', '100000', '200000'), true)) {
 			$input_errors[] = gettext("A valid value must be specified for Number of Hosts to Cache.");
 		}
 		if (isset($_POST['unwanted_reply_threshold']) && !in_array($_POST['unwanted_reply_threshold'], array('disabled', '5000000', '10000000', '20000000', '40000000', '50000000'), true)) {
@@ -231,7 +197,7 @@ if ($savemsg) {
 }
 
 if (is_subsystem_dirty('unbound')) {
-	print_apply_box(gettext("The DNS resolver configuration has been changed.") . "<br />" . gettext("You must apply the changes in order for them to take effect."));
+	print_apply_box(gettext("The DNS resolver configuration has been changed.") . "<br />" . gettext("The changes must be applied for them to take effect."));
 }
 
 $tab_array = array();
@@ -263,7 +229,7 @@ $section->addInput(new Form_Checkbox(
 	'Prefetch Support',
 	'Message cache elements are prefetched before they expire to help keep the cache up to date',
 	$pconfig['prefetch']
-))->setHelp('When enabled, this option can cause an increase of around 10% more DNS traffic and load on the server, but frequently requested items will not expire from the cache');
+))->setHelp('When enabled, this option can cause an increase of around 10% more DNS traffic and load on the server, but frequently requested items will not expire from the cache.');
 
 $section->addInput(new Form_Checkbox(
 	'prefetchkey',
@@ -306,7 +272,7 @@ $section->addInput(new Form_Select(
 	$pconfig['edns_buffer_size'],
 	array_combine(array("512", "1480", "4096"), array("512", "1480", "4096"))
 ))->setHelp('Number of bytes size to advertise as the EDNS reassembly buffer size. This is the value that is used in UDP datagrams sent to peers. ' .
-			'RFC recommendation is 4096 (which is the default). If you have fragmentation reassemble problems, usually seen as timeouts, then a value of 1480 should help. ' .
+			'RFC recommendation is 4096 (which is the default). If fragmentation reassemble problems occur, usually seen as timeouts, then a value of 1480 should help. ' .
 			'The 512 value bypasses most MTU path problems, but it can generate an excessive amount of TCP fallback.');
 
 $section->addInput(new Form_Select(
@@ -314,7 +280,7 @@ $section->addInput(new Form_Select(
 	'Number of Queries per Thread',
 	$pconfig['num_queries_per_thread'],
 	array_combine(array("512", "1024", "2048"), array("512", "1024", "2048"))
-))->setHelp('The number of queries that every thread will service simultaneously. If more queries arrive that need to be serviced, and no queries can be jostled, then these queries are dropped');
+))->setHelp('The number of queries that every thread will service simultaneously. If more queries arrive that need to be serviced, and no queries can be jostled, then these queries are dropped.');
 
 $section->addInput(new Form_Select(
 	'jostle_timeout',
@@ -329,7 +295,7 @@ $section->addInput(new Form_Input(
 	'text',
 	$pconfig['cache_max_ttl']
 ))->setHelp('The Maximum Time to Live for RRsets and messages in the cache. The default is 86400 seconds (1 day). ' .
-			'When the internal TTL expires the cache item is expired. This can be configured to force the resolver to query for data more often and not trust (very large) TTL values');
+			'When the internal TTL expires the cache item is expired. This can be configured to force the resolver to query for data more often and not trust (very large) TTL values.');
 
 $section->addInput(new Form_Input(
 	'cache_min_ttl',
@@ -352,7 +318,7 @@ $section->addInput(new Form_Select(
 	'infra_cache_numhosts',
 	'Number of Hosts to Cache',
 	$pconfig['infra_cache_numhosts'],
-	array_combine(array("1000", "5000", "10000", "20000", "50000"), array("1000", "5000", "10000", "20000", "50000"))
+	array_combine(array("1000", "5000", "10000", "20000", "50000", "100000", "200000"), array("1000", "5000", "10000", "20000", "50000", "100000", "200000"))
 ))->setHelp('Number of infrastructure hosts for which information is cached. The default is 10,000.');
 
 $mln = gettext("million");
@@ -377,7 +343,7 @@ $section->addInput(new Form_Select(
 $section->addInput(new Form_Checkbox(
 	'disable_auto_added_access_control',
 	'Disable Auto-added Access Control',
-	'disable the automatically-added access control entries',
+	'Disable the automatically-added access control entries',
 	$pconfig['disable_auto_added_access_control']
 ))->setHelp('By default, IPv4 and IPv6 networks residing on internal interfaces of this system are permitted. ' .
 			'Allowed networks must be manually configured on the Access Lists tab if the auto-added entries are disabled.');
@@ -387,7 +353,7 @@ $section->addInput(new Form_Checkbox(
 	'Experimental Bit 0x20 Support',
 	'Use 0x-20 encoded random bits in the DNS query to foil spoofing attempts.',
 	$pconfig['use_caps']
-))->setHelp('See the implementation <a href="https://tools.ietf.org/html/draft-vixie-dnsext-dns0x20-00">draft dns-0x20</a> for more information: ');
+))->setHelp('See the implementation <a href="https://tools.ietf.org/html/draft-vixie-dnsext-dns0x20-00">draft dns-0x20</a> for more information.');
 
 $form->add($section);
 print($form);

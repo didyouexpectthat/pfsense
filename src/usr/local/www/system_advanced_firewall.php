@@ -1,60 +1,27 @@
 <?php
 /*
-	system_advanced_firewall.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
- *	Copyright (c)  2008 Shrew Soft Inc
+ * system_advanced_firewall.php
  *
- *	Some or all of this file is based on the m0n0wall project which is
- *	Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * Copyright (c) 2008 Shrew Soft Inc
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -64,7 +31,7 @@
 ##|*MATCH=system_advanced_firewall.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
 require_once("shaper.inc");
@@ -365,8 +332,8 @@ if ($_POST) {
 			unset($config['system']['tftpinterface']);
 		}
 
-		if ($_POST['update-frequency'] != $config['system']['bogons']['interval']) {
-			switch ($_POST['update-frequency']) {
+		if ($_POST['bogonsinterval'] != $config['system']['bogons']['interval']) {
+			switch ($_POST['bogonsinterval']) {
 				case 'daily':
 					install_cron_job("/usr/bin/nice -n20 /etc/rc.update_bogons.sh", true, "1", "3", "*", "*", "*");
 					break;
@@ -378,7 +345,7 @@ if ($_POST) {
 				default:
 					install_cron_job("/usr/bin/nice -n20 /etc/rc.update_bogons.sh", true, "1", "3", "1", "*", "*");
 			}
-			$config['system']['bogons']['interval'] = $_POST['update-frequency'];
+			$config['system']['bogons']['interval'] = $_POST['bogonsinterval'];
 		}
 
 		write_config();
@@ -463,7 +430,7 @@ $section->addInput(new Form_Checkbox(
 	'Disable all packet filtering.',
 	isset($config['system']['disablefilter'])
 ))->setHelp('Note: This converts %s into a routing only platform!<br/>'.
-	'Note: This will also turn off NAT! If you only want to disable NAT, '.
+	'Note: This will also turn off NAT! To only disable NAT, '.
 	'and not firewall rules, visit the <a href="firewall_nat_out.php">Outbound '.
 	'NAT</a> page.', [$g["product_name"]]);
 
@@ -509,7 +476,7 @@ $section->addInput(new Form_Input(
 	$pconfig['maximumstates'],
 	['min' => 1, 'placeholder' => pfsense_default_state_size()]
 ))->setHelp('Maximum number of connections to hold in the firewall state table. '.
-	'<br/>Note: Leave this blank for the default. On your system the default '.
+	'<br/>Note: Leave this blank for the default. On this system the default '.
 	'size is: %d', [pfsense_default_state_size()]);
 
 $section->addInput(new Form_Input(
@@ -520,7 +487,7 @@ $section->addInput(new Form_Input(
 	['placeholder' => pfsense_default_table_entries_size()]
 ))->setHelp('Maximum number of table entries for systems such as aliases, '.
 	'sshlockout, snort, etc, combined.<br/>Note: Leave this blank for the '.
-	'default. On your system the default size is: %d',
+	'default. On this system the default size is: %d',
 	[pfsense_default_table_entries_size()]);
 
 $section->addInput(new Form_Input(
@@ -535,8 +502,8 @@ $section->addInput(new Form_Checkbox(
 	'Static route filtering',
 	'Bypass firewall rules for traffic on the same interface',
 	$pconfig['bypassstaticroutes']
-))->setHelp('This option only applies if you have defined one or more static '.
-	'routes. If it is enabled, traffic that enters and leaves through the same '.
+))->setHelp('This option only applies if one or more static routes have been defined. '.
+	'If it is enabled, traffic that enters and leaves through the same '.
 	'interface will not be checked by the firewall. This may be desirable in some '.
 	'situations where multiple subnets are connected to the same interface.');
 
@@ -552,9 +519,9 @@ $section->addInput(new Form_Checkbox(
 	'Disable reply-to',
 	'Disable reply-to on WAN rules',
 	$pconfig['disablereplyto']
-))->setHelp('With Multi-WAN you generally want to ensure traffic leaves the same '.
+))->setHelp('With Multi-WAN it is generally desired to ensure traffic leaves the same '.
 	'interface it arrives on, hence reply-to is added automatically by default. When '.
-	'using bridging, you must disable this behavior if the WAN gateway IP is '.
+	'using bridging, this behavior must be disabled if the WAN gateway IP is '.
 	'different from the gateway IP of the hosts behind the bridged interface.');
 
 $section->addInput(new Form_Checkbox(
@@ -562,10 +529,9 @@ $section->addInput(new Form_Checkbox(
 	'Disable Negate rules',
 	'Disable Negate rule on policy routing rules',
 	$pconfig['disablenegate']
-))->setHelp('With Multi-WAN you generally want to ensure traffic reaches directly '.
-	'connected networks and VPN networks when using policy routing. You can disable '.
-	'this for special purposes but it requires manually creating rules for these '.
-	'networks');
+))->setHelp('With Multi-WAN it is generally desired to ensure traffic reaches directly '.
+	'connected networks and VPN networks when using policy routing. This can be disabled '.
+	'for special purposes but it requires manually creating rules for these networks.');
 
 $section->addInput(new Form_Input(
 	'aliasesresolveinterval',
@@ -574,7 +540,7 @@ $section->addInput(new Form_Input(
 	$pconfig['aliasesresolveinterval'],
 	['placeholder' => '300']
 ))->setHelp('Interval, in seconds, that will be used to resolve hostnames '.
-	'configured on aliases.. <br/>Note:	 Leave this blank for the default '.
+	'configured on aliases. <br/>Note:	 Leave this blank for the default '.
 	'(300s).');
 
 $section->addInput(new Form_Checkbox(
@@ -650,7 +616,7 @@ if (count($config['interfaces']) > 1) {
 	$section->addInput(new Form_Checkbox(
 		'enablebinatreflection',
 		'Enable NAT Reflection for 1:1 NAT',
-		'Automatic creation of additional NAT redirect rules from within your internal networks.',
+		'Automatic creation of additional NAT redirect rules from within the internal networks.',
 		isset($config['system']['enablebinatreflection'])
 	))->setHelp('Note: Reflection on 1:1 mappings is only for the inbound component of '.
 		'the 1:1 mappings. This functions the same as the pure NAT mode for port '.
@@ -674,12 +640,12 @@ if (count($config['interfaces']) > 1) {
 		$pconfig['tftpinterface'],
 		get_configured_interface_with_descr(),
 		true
-	))->setHelp('Choose the interfaces where you want TFTP proxy helper to be enabled.');
+	))->setHelp('Choose the interfaces on which to enable TFTP proxy helper.');
 
 	$form->add($section);
 }
 
-$section = new Form_Section('State Timeouts in Seconds. (Leave blank for default)');
+$section = new Form_Section('State Timeouts (seconds - blank for default)');
 
 $tcpTimeouts = array('First', 'Opening', 'Established', 'Closing', 'FIN Wait', 'Closed');
 foreach ($tcpTimeouts as $name) {

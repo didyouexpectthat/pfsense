@@ -1,60 +1,27 @@
 <?php
 /*
-	system_advanced_admin.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
- *	Copyright (c)  2008 Shrew Soft Inc
+ * system_advanced_admin.php
  *
- *	Some or all of this file is based on the m0n0wall project which is
- *	Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * Copyright (c) 2008 Shrew Soft Inc
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -64,7 +31,7 @@
 ##|*MATCH=system_advanced_admin.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
 require_once("shaper.inc");
@@ -110,7 +77,7 @@ if ($_POST) {
 	/* input validation */
 	if ($_POST['webguiport']) {
 		if (!is_port($_POST['webguiport'])) {
-			$input_errors[] = gettext("You must specify a valid webConfigurator port number");
+			$input_errors[] = gettext("A valid webConfigurator port number must be specified");
 		}
 	}
 
@@ -123,7 +90,7 @@ if ($_POST) {
 	if ($_POST['althostnames']) {
 		$althosts = explode(" ", $_POST['althostnames']);
 		foreach ($althosts as $ah) {
-			if (!is_hostname($ah)) {
+			if (!is_ipaddr($ah) && !is_hostname($ah)) {
 				$input_errors[] = sprintf(gettext("Alternate hostname %s is not a valid hostname."), htmlspecialchars($ah));
 			}
 		}
@@ -131,7 +98,7 @@ if ($_POST) {
 
 	if ($_POST['sshport']) {
 		if (!is_port($_POST['sshport'])) {
-			$input_errors[] = gettext("You must specify a valid port number");
+			$input_errors[] = gettext("A valid port number must be specified");
 		}
 	}
 
@@ -357,9 +324,8 @@ $group->add(new Form_Checkbox(
 	'https'
 ))->displayAsRadio();
 
-$group->setHelp($certs_available ? '':'No Certificates have been defined. You must '.
-	'<a href="system_certmanager.php">'. gettext("Create or Import").'</a> '.
-	'a Certificate before SSL can be enabled.');
+$group->setHelp($certs_available ? '':'No Certificates have been defined. A certificate is required before SSL can be enabled. '.
+	'<a href="system_certmanager.php">'. gettext("Create or Import").'</a> '.' a Certificate.');
 
 $section->add($group);
 
@@ -382,16 +348,16 @@ $section->addInput(new Form_Input(
 	$config['system']['webgui']['port'],
 	['min' => 1, 'max' => 65535]
 ))->setHelp('Enter a custom port number for the webConfigurator '.
-	'above if you want to override the default (80 for HTTP, 443 '.
-	'for HTTPS). Changes will take effect immediately after save.');
+	'above to override the default (80 for HTTP, 443 for HTTPS). '.
+	'Changes will take effect immediately after save.');
 
 $section->addInput(new Form_Input(
 	'max_procs',
 	'Max Processes',
 	'number',
 	$pconfig['max_procs']
-))->setHelp('Enter the number of webConfigurator processes you '.
-	'want to run. This defaults to 2. Increasing this will allow more '.
+))->setHelp('Enter the number of webConfigurator processes to run. '.
+	'This defaults to 2. Increasing this will allow more '.
 	'users/browsers to access the GUI concurrently.');
 
 $section->addInput(new Form_Checkbox(
@@ -437,8 +403,8 @@ $section->addInput(new Form_Checkbox(
 	'unchecked, access to the webConfigurator on the %s interface is always '.
 	'permitted, regardless of the user-defined firewall rule set. Check this box to '.
 	'disable this automatically added rule, so access to the webConfigurator is '.
-	'controlled by the user-defined firewall rules (ensure you have a firewall rule '.
-	'in place that allows you in, or you will lock yourself out!)<em>Hint: the &quot;Set interface(s) IP address&quot; '.
+	'controlled by the user-defined firewall rules (ensure a firewall rule is '.
+	'in place that allows access, to avoid being locked out!) <em>Hint: the &quot;Set interface(s) IP address&quot; '.
 	'option in the console menu resets this setting as well.</em>', [$lockout_interface]);
 
 $section->addInput(new Form_Checkbox(
@@ -446,19 +412,19 @@ $section->addInput(new Form_Checkbox(
 	'DNS Rebind Check',
 	'Disable DNS Rebinding Checks',
 	$pconfig['nodnsrebindcheck']
-))->setHelp('When this is unchecked, your system is protected against <a '.
+))->setHelp('When this is unchecked, the system is protected against <a '.
 	'href="http://en.wikipedia.org/wiki/DNS_rebinding">DNS Rebinding attacks</a>. '.
-	'This blocks private IP responses from your configured DNS servers. Check this '.
+	'This blocks private IP responses from the configured DNS servers. Check this '.
 	'box to disable this protection if it interferes with webConfigurator access or '.
-	'name resolution in your environment.');
+	'name resolution in the environment.');
 
 $section->addInput(new Form_Input(
 	'althostnames',
 	'Alternate Hostnames',
 	'text',
 	htmlspecialchars($pconfig['althostnames'])
-))->setHelp('Alternate Hostnames for DNS Rebinding and HTTP_REFERER Checks. Here '.
-	'you can specify alternate hostnames by which the router may be queried, to '.
+))->setHelp('Alternate Hostnames for DNS Rebinding and HTTP_REFERER Checks. '.
+	'Specify alternate hostnames by which the router may be queried, to '.
 	'bypass the DNS Rebinding Attack checks. Separate hostnames with spaces.');
 
 $section->addInput(new Form_Checkbox(
@@ -468,19 +434,12 @@ $section->addInput(new Form_Checkbox(
 	$pconfig['nohttpreferercheck']
 ))->setHelp('When this is unchecked, access to the webConfigurator is protected '.
 	'against HTTP_REFERER redirection attempts. Check this box to disable this '.
-	'protection if you find that it interferes with webConfigurator access in certain '.
+	'protection if it interferes with webConfigurator access in certain '.
 	'corner cases such as using external scripts to interact with this system. More '.
 	'information on HTTP_REFERER is available from <a target="_blank" '.
 	'href="http://en.wikipedia.org/wiki/HTTP_referrer">Wikipedia</a>.');
 
-$section->addInput(new Form_Checkbox(
-	'pagenamefirst',
-	'Browser tab text',
-	'Display page name first in browser tab',
-	$pconfig['pagenamefirst']
-))->setHelp('When this is unchecked, the browser tab shows the host name followed '.
-	'by the current page. Check this box to display the current page followed by the '.
-	'host name.');
+gen_pagenamefirst_field($section, $pconfig['pagenamefirst']);
 
 $form->add($section);
 $section = new Form_Section('Secure Shell');
@@ -513,14 +472,14 @@ $section->addInput(new Form_Input(
 $form->add($section);
 $section = new Form_Section('Serial Communications');
 
-if (!$g['enableserial_force'] && ($g['platform'] == $g['product_name'] || $g['platform'] == "cdrom")) {
+if (!$g['enableserial_force']) {
 	$section->addInput(new Form_Checkbox(
 		'enableserial',
 		'Serial Terminal',
 		'Enables the first serial port with 115200/8/N/1 by default, or another speed selectable below.',
 		isset($pconfig['enableserial'])
 	))->setHelp('Note:	This will redirect the console output and messages to '.
-		'the serial port. You can still access the console menu from the internal video '.
+		'the serial port. The console menu can still be accessed from the internal video '.
 		'card/keyboard. A <b>null modem</b> serial cable or adapter is required to use the '.
 		'serial console.');
 }
@@ -532,7 +491,7 @@ $section->addInput(new Form_Select(
 	array_combine(array(115200, 57600, 38400, 19200, 14400, 9600), array(115200, 57600, 38400, 19200, 14400, 9600))
 ))->setHelp('Allows selection of different speeds for the serial console port.');
 
-if (!$g['enableserial_force'] && ($g['platform'] == $g['product_name'] || $g['platform'] == "cdrom")) {
+if (!$g['enableserial_force'] && !$g['primaryconsole_force']) {
 	$section->addInput(new Form_Select(
 		'primaryconsole',
 		'Primary Console',

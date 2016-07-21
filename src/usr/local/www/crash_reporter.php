@@ -1,56 +1,22 @@
 <?php
 /*
-	crash_reporter.php
-*/
-/* ====================================================================
- *  Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * crash_reporter.php
  *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met:
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *  1. Redistributions of source code must retain the above copyright notice,
- *      this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  2. Redistributions in binary form must reproduce the above copyright
- *      notice, this list of conditions and the following disclaimer in
- *      the documentation and/or other materials provided with the
- *      distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  3. All advertising materials mentioning features or use of this software
- *      must display the following acknowledgment:
- *      "This product includes software developed by the pfSense Project
- *       for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *  4. The names "pfSense" and "pfSense Project" must not be used to
- *       endorse or promote products derived from this software without
- *       prior written permission. For written permission, please contact
- *       coreteam@pfsense.org.
- *
- *  5. Products derived from this software may not be called "pfSense"
- *      nor may "pfSense" appear in their names without prior written
- *      permission of the Electric Sheep Fencing, LLC.
- *
- *  6. Redistributions of any form whatsoever must retain the following
- *      acknowledgment:
- *
- *  "This product includes software developed by the pfSense Project
- *  for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *  THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *  EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *  ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *  STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *  OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  ====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -60,9 +26,9 @@
 ##|*MATCH=crash_reporter.php*
 ##|-PRIV
 
-require("guiconfig.inc");
-require("functions.inc");
-require("captiveportal.inc");
+require_once("guiconfig.inc");
+require_once("functions.inc");
+require_once("captiveportal.inc");
 
 define("FILE_SIZE", 450000);
 
@@ -96,7 +62,7 @@ $crash_report_header .= php_uname("r") . "\n";
 $crash_report_header .= php_uname("v") . "\n";
 $crash_report_header .= "\nCrash report details:\n";
 
-exec("/usr/bin/grep -vi warning /tmp/PHP_errors.log", $php_errors);
+exec("/bin/cat /tmp/PHP_errors.log", $php_errors);
 
 	if ($_POST['Submit'] == "Yes") {
 		echo gettext("Processing...");
@@ -150,12 +116,12 @@ exec("/usr/bin/grep -vi warning /tmp/PHP_errors.log", $php_errors);
 		}
 ?>
 	<div class="panel panel-default">
-		<div class="panel-heading"><h2 class="panel-title"><?=gettext("Unfortunately We Have Detected a Programming Bug")?></h2></div>
+		<div class="panel-heading"><h2 class="panel-title"><?=gettext("Unfortunately a Programming Bug has been detected")?></h2></div>
 		<div class="panel-body">
 			<div class="content">
 				<p>
-					<?=gettext("Would you like to submit the programming debug logs to the pfSense developers for inspection?")?>
-					<i><?=gettext("Please double check the contents to ensure you are comfortable sending this information before clicking Yes.")?></i>
+					<?=gettext("The programming debug logs can be submitted to the pfSense developers for inspection.")?>
+					<i><?=gettext("Please double check the contents to ensure this information is acceptable to disclose before submitting.")?></i>
 				</p>
 				<textarea readonly style="width: 100%; height: 350px;">
 					<?=$crash_reports?>
@@ -168,7 +134,7 @@ exec("/usr/bin/grep -vi warning /tmp/PHP_errors.log", $php_errors);
 					</button>
 					<button class="btn btn-warning" name="Submit" type="submit" value="No">
 						<i class="fa fa-undo"></i>
-						<?=gettext("No")?> - <?=gettext("Just delete the crash report and take me back to the Dashboard")?>
+						<?=gettext("No")?> - <?=gettext("Just delete the crash report and return to the Dashboard")?>
 					</button>
 				</form>
 			</div>

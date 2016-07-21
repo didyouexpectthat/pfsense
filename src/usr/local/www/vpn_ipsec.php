@@ -1,59 +1,26 @@
 <?php
 /*
-	vpn_ipsec.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * vpn_ipsec.php
  *
- *  Some or all of this file is based on the m0n0wall project which is
- *  Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -63,7 +30,7 @@
 ##|*MATCH=vpn_ipsec.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
 require_once("shaper.inc");
@@ -266,7 +233,7 @@ display_top_tabs($tab_array);
 	}
 
 	if (is_subsystem_dirty('ipsec')) {
-		print_apply_box(gettext("The IPsec tunnel configuration has been changed.") . "<br />" . gettext("You must apply the changes in order for them to take effect."));
+		print_apply_box(gettext("The IPsec tunnel configuration has been changed.") . "<br />" . gettext("The changes must be applied for them to take effect."));
 	}
 ?>
 
@@ -302,7 +269,7 @@ display_top_tabs($tab_array);
 					<tr id="fr<?=$i?>" onclick="fr_toggle(<?=$i?>)" id="frd<?=$i?>" ondblclick="document.location='vpn_ipsec_phase1.php?p1index=<?=$i?>'" class="<?= $entryStatus ?>">
 						<td>
 							<input type="checkbox" id="frc<?=$i?>" onclick="fr_toggle(<?=$i?>)" name="p1entry[]" value="<?=$i?>"  />
-							<a	class="fa fa-anchor" id="Xmove_<?=$i?>" title="<?=gettext("Move checked entries to here")?>"></a>
+							<a	class="fa fa-anchor icon-pointer" id="Xmove_<?=$i?>" title="<?=gettext("Move checked entries to here")?>"></a>
 						</td>
 						<td>
 							<button value="toggle_<?=$i?>" name="toggle_<?=$i?>" title="<?=gettext("click to toggle enabled/disabled status")?>" class="btn btn-xs btn-<?= ($entryStatus == 'disabled' ? 'success' : 'warning') ?>" type="submit"><?= ($entryStatus == 'disabled' ? 'Enable' : 'Disable') ?></button>
@@ -355,7 +322,7 @@ display_top_tabs($tab_array);
 						<td id="frd<?=$i?>">
 					<?=$spans?>
 					<?php
-					if (empty($ph1ent['iketype']) || $ph1ent['iketype'] == "ikev1") {
+					if (empty($ph1ent['iketype']) || $ph1ent['iketype'] == "ikev1" || $ph1ent['iketype'] == "auto") {
 						echo "{$ph1ent['mode']}";
 					}
 					?>
@@ -415,7 +382,7 @@ display_top_tabs($tab_array);
 				$fr_prefix = "frp2{$i}";
 				$fr_header = $fr_prefix . "header";
 ?>
-								<input type="button" onclick="show_phase2('tdph2-<?=$i?>','shph2but-<?=$i?>')" value="+" /> - <?php printf(gettext("Show %s Phase-2 entries"), $phase2count); ?>
+								<button class="btn btn-info" type="button" onclick="show_phase2('tdph2-<?=$i?>','shph2but-<?=$i?>')" value="+"><i class="fa fa-plus-circle"></i> <?php printf(gettext("Show Phase 2 Entries (%s)"), $phase2count); ?></button>
 							</div>
 							<div id="tdph2-<?=$i?>" <?=($tdph2_visible != '1' ? 'style="display:none"' : '')?>>
 								<table class="table table-striped table-hover">
@@ -557,7 +524,7 @@ display_top_tabs($tab_array);
 </form>
 
 <div class="infoblock">
-	<?php print_info_box(sprintf(gettext("You can check your IPsec status at %s%s%s."), '<a href="status_ipsec.php">', gettext("Status:IPsec"), '</a>') . '<br />' .
+	<?php print_info_box(sprintf(gettext("The IPsec status can be checked at %s%s%s."), '<a href="status_ipsec.php">', gettext("Status:IPsec"), '</a>') . '<br />' .
 	sprintf(gettext("IPsec debug mode can be enabled at %s%s%s."), '<a href="vpn_ipsec_settings.php">', gettext("VPN:IPsec:Advanced Settings"), '</a>') . '<br />' .
 	sprintf(gettext("IPsec can be set to prefer older SAs at %s%s%s."), '<a href="vpn_ipsec_settings.php">', gettext("VPN:IPsec:Advanced Settings"), '</a>'), 'info', false); ?>
 </div>
@@ -573,17 +540,24 @@ function show_phase2(id, buttonid) {
 
 events.push(function() {
 	$('[id^=Xmove_]').click(function (event) {
+		// ToDo: We POST shift="yes" if the user has the shift key depressed, but that is not yet used
+		// by the $_POST code. It is intended to allow the user to choose to move stuff to the row before or
+		// after the clicked anchor icon
+		if (event.shiftKey) {
+			$('form').append('<input type="hidden" id="shift" name="shift" value="yes" />');
+		}
+
 		$('#' + event.target.id.slice(1)).click();
 	});
 
 	$('[id^=Xdel_]').click(function (event) {
-		if (confirm("<?=gettext('Are you sure you wish to delete this P1 entry?')?>")) {
+		if (confirm("<?=gettext('Confirmation required to delete this P1 entry.')?>")) {
 			$('#' + event.target.id.slice(1)).click();
 		}
 	});
 
 	$('[id^=Xdelp2_]').click(function (event) {
-		if (confirm("<?=gettext('Are you sure you wish to delete this P2 entry?')?>")) {
+		if (confirm("<?=gettext('Confirmation required to delete this P2 entry.')?>")) {
 			$('#' + event.target.id.slice(1)).click();
 		}
 	});

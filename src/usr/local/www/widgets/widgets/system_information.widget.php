@@ -1,58 +1,27 @@
 <?php
 /*
-	system_information.widget.php
-*/
-/*
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
- *	Copyright (c)  2007 Scott Dale
+ * system_information.widget.php
  *
- *	Some or all of this file is based on the m0n0wall project which is
- *	Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * Copyright (c) 2007 Scott Dale
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally part of m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 require_once("functions.inc");
@@ -62,6 +31,10 @@ include_once("includes/functions.inc.php");
 
 if ($_REQUEST['getupdatestatus']) {
 	require_once("pkg-utils.inc");
+
+	if (isset($config['system']['firmware']['disablecheck'])) {
+		exit;
+	}
 
 	$system_version = get_system_pkg_version();
 
@@ -91,10 +64,10 @@ if ($_REQUEST['getupdatestatus']) {
 <?php
 		break;
 	case '=':
-		print(gettext("You are on the latest version."));
+		print(gettext("The system is on the latest version."));
 		break;
 	case '>':
-		print(gettext("You are on a later version than<br />the official release."));
+		print(gettext("The system is on a later version than<br />the official release."));
 		break;
 	default:
 		print(gettext( "<i>Error comparing installed version<br />with latest available</i>"));
@@ -116,7 +89,7 @@ $filesystems = get_mounted_filesystems();
 		<tr>
 			<th><?=gettext("Version");?></th>
 			<td>
-				<strong><?=$g['product_version']?></strong>
+				<strong><?=$g['product_version_string']?></strong>
 				(<?php echo php_uname("m"); ?>)
 				<br />
 				<?=gettext('built on')?> <?php readfile("/etc/version.buildtime"); ?>
@@ -238,9 +211,12 @@ $filesystems = get_mounted_filesystems();
 		<tr>
 			<th><?=gettext("Temperature");?></th>
 			<td>
-				<?php $TempMeter = $temp = get_temp(); ?>
-				<div id="tempPB"></div>
-				<span id="tempmeter"><?= $temp."&#176;C"; ?></span>
+				<?php $temp_deg_c = get_temp(); ?>
+				<div class="progress">
+					<div id="tempPB" class="progress-bar progress-bar-striped" role="progressbar" aria-valuenow="<?=$temp_deg_c?>" aria-valuemin="0" aria-valuemax="100" style="width: <?=$temp_deg_c?>%">
+					</div>
+				</div>
+				<span id="tempmeter"><?= $temp_deg_c . "&deg;C"; ?></span>
 			</td>
 		</tr>
 		<?php endif; ?>
@@ -294,7 +270,7 @@ $filesystems = get_mounted_filesystems();
 					<div id="diskspace<?=$diskidx?>" class="progress-bar progress-bar-striped" role="progressbar" aria-valuenow="<?=$fs['percent_used']?>" aria-valuemin="0" aria-valuemax="100" style="width: <?=$fs['percent_used']?>%">
 					</div>
 				</div>
-				<span><?=$fs['percent_used']?>%<?=gettext(" of ")?><?=$fs['total_size']?>iB - <?=$fs['type'] . ("md" == substr(basename($fs['device']), 0, 2) ? " " . gettext("in RAM") : "")?></spa>
+				<span><?=$fs['percent_used']?>%<?=gettext(" of ")?><?=$fs['total_size']?>iB - <?=$fs['type'] . ("md" == substr(basename($fs['device']), 0, 2) ? " " . gettext("in RAM") : "")?></span>
 			</td>
 		</tr>
 <?php $diskidx++; endforeach; ?>
@@ -304,6 +280,7 @@ $filesystems = get_mounted_filesystems();
 
 <script type="text/javascript">
 //<![CDATA[
+<?php if (!isset($config['system']['firmware']['disablecheck'])): ?>
 function systemStatusGetUpdateStatus() {
 	$.ajax({
 		type: 'get',
@@ -319,6 +296,7 @@ function systemStatusGetUpdateStatus() {
 		}
 	});
 }
+<?php endif; ?>
 
 function updateMeters() {
 	url = '/getstats.php';
@@ -336,9 +314,11 @@ function updateMeters() {
 
 }
 
+<?php if (!isset($config['system']['firmware']['disablecheck'])): ?>
 events.push(function(){
 	setTimeout('systemStatusGetUpdateStatus()', 4000);
 });
+<?php endif; ?>
 
 /*   Most widgets update their backend data every 10 seconds.  11 seconds
  *   will ensure that we update the GUI right after the stats are updated.
@@ -391,7 +371,7 @@ function updateMemory(x) {
 
 function updateMbuf(x) {
 	if ($('#mbuf')) {
-		$("#mbuf").html(x);
+		$("#mbuf").html('(' + x + ')');
 	}
 }
 
@@ -421,10 +401,10 @@ function updateCPU(x) {
 
 function updateTemp(x) {
 	if ($("#tempmeter")) {
-		$("#tempmeter").html(x + '\u00B0' + 'C');
+		$("#tempmeter").html(x + '&deg;' + 'C');
 	}
 	if ($('#tempPB')) {
-		$("#tempPB").progressbar( { value: parseInt(x) } );
+		setProgress('tempPB', parseInt(x));
 	}
 }
 

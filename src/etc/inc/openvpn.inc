@@ -1,65 +1,31 @@
 <?php
 /*
-	openvpn.inc
-
-	part of pfSense (https://www.pfsense.org)
-	Copyright (C) 2006  Fernando Lemos
-	Copyright (c) 2006-2016 Electric Sheep Fencing, LLC.
-	All rights reserved.
-
-	This file was rewritten from scratch by Fernando Lemos but
-	*MIGHT* contain code previously written by:
-
-	Copyright (C) 2005 Peter Allgeyer <allgeyer_AT_web.de>
-	All rights reserved.
-
-	Copyright (C) 2004 Peter Curran (peter@closeconsultants.com).
-	All rights reserved.
-
-	Redistribution and use in source and binary forms, with or without
-	modification, are permitted provided that the following conditions are met:
-
-	1. Redistributions of source code must retain the above copyright notice,
-	   this list of conditions and the following disclaimer.
-
-	2. Redistributions in binary form must reproduce the above copyright
-	   notice, this list of conditions and the following disclaimer in
-	   the documentation and/or other materials provided with the
-	   distribution.
-
-	3. All advertising materials mentioning features or use of this software
-	   must display the following acknowledgment:
-	   "This product includes software developed by the pfSense Project
-	   for use in the pfSense® software distribution. (http://www.pfsense.org/).
-
-	4. The names "pfSense" and "pfSense Project" must not be used to
-	   endorse or promote products derived from this software without
-	   prior written permission. For written permission, please contact
-	   coreteam@pfsense.org.
-
-	5. Products derived from this software may not be called "pfSense"
-	   nor may "pfSense" appear in their names without prior written
-	   permission of the Electric Sheep Fencing, LLC.
-
-	6. Redistributions of any form whatsoever must retain the following
-	   acknowledgment:
-
-	"This product includes software developed by the pfSense Project
-	for use in the pfSense software distribution (http://www.pfsense.org/).
-
-	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
-	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
-	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
-	OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ * openvpn.inc
+ *
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2006 Fernando Lemos
+ * Copyright (c) 2006-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
+ *
+ * This file was rewritten from scratch by Fernando Lemos but
+ * *MIGHT* contain code previously written by:
+ *
+ * Copyright (c) 2005 Peter Allgeyer <allgeyer_AT_web.de>
+ * Copyright (c) 2004 Peter Curran (peter@closeconsultants.com).
+ * All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 require_once('config.inc');
 require_once("certs.inc");
@@ -103,7 +69,8 @@ $openvpn_verbosity_level = array(
 
 global $openvpn_dh_lengths;
 $openvpn_dh_lengths = array(
-	1024, 2048, 4096);
+	1024, 2048, 3072, 4096, 7680, 8192, 15360, 16384
+);
 
 global $openvpn_cert_depths;
 $openvpn_cert_depths = array(
@@ -763,8 +730,8 @@ function openvpn_reconfigure($mode, $settings) {
 	// server specific settings
 	if ($mode == 'server') {
 
-		list($ip, $cidr) = explode('/', $settings['tunnel_network']);
-		list($ipv6, $prefix) = explode('/', $settings['tunnel_networkv6']);
+		list($ip, $cidr) = explode('/', trim($settings['tunnel_network']));
+		list($ipv6, $prefix) = explode('/', trim($settings['tunnel_networkv6']));
 		$mask = gen_subnet_mask($cidr);
 
 		// configure tls modes
@@ -850,7 +817,7 @@ function openvpn_reconfigure($mode, $settings) {
 					if ($settings['strictusercn']) {
 						$strictusercn = "true";
 					}
-					$conf .= "auth-user-pass-verify \"/usr/local/sbin/ovpn_auth_verify user '{$settings['authmode']}' {$strictusercn} {$mode_id}\" via-env\n";
+					$conf .= "auth-user-pass-verify \"/usr/local/sbin/ovpn_auth_verify user '{$settings['authmode']}' {$strictusercn} {$mode_id} {$settings['local_port']}\" via-env\n";
 				}
 				break;
 		}
@@ -939,7 +906,7 @@ function openvpn_reconfigure($mode, $settings) {
 		}
 
 		if (!empty($settings['tunnel_network'])) {
-			list($ip, $cidr) = explode('/', $settings['tunnel_network']);
+			list($ip, $cidr) = explode('/', trim($settings['tunnel_network']));
 			$mask = gen_subnet_mask($cidr);
 			list($ip1, $ip2) = openvpn_get_interface_ip($ip, $cidr);
 			if ($settings['dev_mode'] == 'tun') {
@@ -950,7 +917,7 @@ function openvpn_reconfigure($mode, $settings) {
 		}
 
 		if (!empty($settings['tunnel_networkv6'])) {
-			list($ipv6, $prefix) = explode('/', $settings['tunnel_networkv6']);
+			list($ipv6, $prefix) = explode('/', trim($settings['tunnel_networkv6']));
 			list($ipv6_1, $ipv6_2) = openvpn_get_interface_ipv6($ipv6, $prefix);
 			if ($settings['dev_mode'] == 'tun') {
 				$conf .= "ifconfig-ipv6 {$ipv6_2} {$ipv6_1}\n";
@@ -1007,8 +974,16 @@ function openvpn_reconfigure($mode, $settings) {
 		case 'server_tls':
 		case 'server_tls_user':
 		case 'server_user':
-			$ca = lookup_ca($settings['caref']);
-			openvpn_add_keyfile($ca['crt'], $conf, $mode_id, "ca");
+			// ca_chain() expects parameter to be passed by reference. 
+			// avoid passing the whole settings array, as param names or 
+			// types might change in future releases. 
+			$param = array('caref' => $settings['caref']);	
+			$ca = ca_chain($param);
+			$ca = base64_encode($ca);
+			
+			openvpn_add_keyfile($ca, $conf, $mode_id, "ca");
+			
+			unset($ca, $param);
 
 			if (!empty($settings['certref'])) {
 				$cert = lookup_cert($settings['certref']);
@@ -1234,10 +1209,6 @@ function openvpn_resync_csc(& $settings) {
 
 	openvpn_add_dhcpopts($settings, $conf);
 
-	if ($settings['gwredir']) {
-		$conf .= "push \"redirect-gateway def1\"\n";
-	}
-
 	openvpn_add_custom($settings, $conf);
 	/* Loop through servers, find which ones can use this CSC */
 	if (is_array($config['openvpn']['openvpn-server'])) {
@@ -1251,7 +1222,7 @@ function openvpn_resync_csc(& $settings) {
 					$csc_conf = $conf;
 
 					if (!empty($serversettings['tunnel_network']) && !empty($settings['tunnel_network'])) {
-						list($ip, $mask) = explode('/', $settings['tunnel_network']);
+						list($ip, $mask) = explode('/', trim($settings['tunnel_network']));
 						if (($serversettings['dev_mode'] == 'tap') || ($serversettings['topology'] == "subnet")) {
 							$csc_conf .= "ifconfig-push {$ip} " . gen_subnet_mask($mask) . "\n";
 						} else {
@@ -1267,6 +1238,15 @@ function openvpn_resync_csc(& $settings) {
 					chgrp($csc_path, 'nobody');
 				}
 			}
+		}
+	}
+}
+
+function openvpn_resync_csc_all() {
+	global $config;
+	if (is_array($config['openvpn']['openvpn-csc'])) {
+		foreach ($config['openvpn']['openvpn-csc'] as & $settings) {
+			openvpn_resync_csc($settings);
 		}
 	}
 }
@@ -1352,11 +1332,7 @@ function openvpn_resync_all($interface = "") {
 		}
 	}
 
-	if (is_array($config['openvpn']['openvpn-csc'])) {
-		foreach ($config['openvpn']['openvpn-csc'] as & $settings) {
-			openvpn_resync_csc($settings);
-		}
-	}
+	openvpn_resync_csc_all();
 
 }
 
@@ -1415,7 +1391,7 @@ function openvpn_get_active_servers($type="multipoint") {
 			$server['vpnid'] = $settings['vpnid'];
 			$server['mgmt'] = "server{$server['vpnid']}";
 			$socket = "unix://{$g['varetc_path']}/openvpn/{$server['mgmt']}.sock";
-			list($tn, $sm) = explode('/', $settings['tunnel_network']);
+			list($tn, $sm) = explode('/', trim($settings['tunnel_network']));
 
 			if ((($server['mode'] == "p2p_shared_key") || ($sm >= 30)) && ($type == "p2p")) {
 				$servers[] = openvpn_get_client_status($server, $socket);
@@ -1614,7 +1590,6 @@ function openvpn_get_client_status($client, $socket) {
 		fclose($fp);
 
 	} else {
-		$DisplayNote=true;
 		$client['remote_host'] = gettext("Unable to contact daemon");
 		$client['virtual_addr'] = gettext("Service not running?");
 		$client['bytes_recv'] = 0;
@@ -1737,7 +1712,7 @@ function openvpn_clear_route($mode, $settings) {
 	if (empty($settings['tunnel_network'])) {
 		return;
 	}
-	list($ip, $cidr) = explode('/', $settings['tunnel_network']);
+	list($ip, $cidr) = explode('/', trim($settings['tunnel_network']));
 	$mask = gen_subnet_mask($cidr);
 	$clear_route = false;
 

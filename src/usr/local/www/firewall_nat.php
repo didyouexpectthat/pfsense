@@ -1,59 +1,26 @@
 <?php
 /*
-	firewall_nat.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * firewall_nat.php
  *
- *	Some or all of this file is based on the m0n0wall project which is
- *	Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -63,7 +30,7 @@
 ##|*MATCH=firewall_nat.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
 require_once("shaper.inc");
@@ -212,7 +179,7 @@ if ($savemsg) {
 
 if (is_subsystem_dirty('natconf')) {
 	print_apply_box(gettext('The NAT configuration has been changed.') . '<br />' .
-					gettext('You must apply the changes in order for them to take effect.'));
+					gettext('The changes must be applied for them to take effect.'));
 }
 
 $tab_array = array();
@@ -264,11 +231,22 @@ foreach ($a_nat as $natent):
 		display_separator($separators, $nnats, $columns_in_table);
 	}
 
+	$localport = $natent['local-port'];
+
+	list($dstbeginport, $dstendport) = explode("-", $natent['destination']['port']);
+
+	if ($dstendport) {
+		$localendport = $natent['local-port'] + $dstendport - $dstbeginport;
+		$localport	 .= '-' . $localendport;
+	}
+
 	$alias = rule_columns_with_alias(
 		$natent['source']['address'],
 		pprint_port($natent['source']['port']),
 		$natent['destination']['address'],
-		pprint_port($natent['destination']['port'])
+		pprint_port($natent['destination']['port']),
+		$natent['target'],
+		$localport
 	);
 
 	/* if user does not have access to edit an interface skip on to the next record */
@@ -336,11 +314,11 @@ foreach ($a_nat as $natent):
 <?php
 	endif;
 ?>
-							<?=htmlspecialchars(pprint_address($natent['source']))?>
+							<?=str_replace('_', ' ', htmlspecialchars(pprint_address($natent['source'])))?>
 <?php
 	if (isset($alias['src'])):
 ?>
-							<i class='fa fa-pencil'></i></a>
+							</a>
 <?php
 	endif;
 ?>
@@ -353,11 +331,11 @@ foreach ($a_nat as $natent):
 <?php
 	endif;
 ?>
-							<?=htmlspecialchars(pprint_port($natent['source']['port']))?>
+							<?=str_replace('_', ' ', htmlspecialchars(pprint_port($natent['source']['port'])))?>
 <?php
 	if (isset($alias['srcport'])):
 ?>
-							<i class='fa fa-pencil'></i></a>
+							</a>
 <?php
 	endif;
 ?>
@@ -371,11 +349,11 @@ foreach ($a_nat as $natent):
 <?php
 	endif;
 ?>
-							<?=htmlspecialchars(pprint_address($natent['destination']))?>
+							<?=str_replace('_', ' ', htmlspecialchars(pprint_address($natent['destination'])))?>
 <?php
 	if (isset($alias['dst'])):
 ?>
-							<i class='fa fa-pencil'></i></a>
+							</a>
 <?php
 	endif;
 ?>
@@ -388,31 +366,49 @@ foreach ($a_nat as $natent):
 <?php
 	endif;
 ?>
-							<?=htmlspecialchars(pprint_port($natent['destination']['port']))?>
+							<?=str_replace('_', ' ', htmlspecialchars(pprint_port($natent['destination']['port'])))?>
 <?php
 	if (isset($alias['dstport'])):
 ?>
-							<i class='fa fa-pencil'></i></a>
+							</a>
 <?php
 	endif;
 ?>
 						</td>
+						<td>
+<?php
+	if (isset($alias['target'])):
+?>
+							<a href="/firewall_aliases_edit.php?id=<?=$alias['target']?>" data-toggle="popover" data-trigger="hover focus" title="<?=gettext('Alias details')?>" data-content="<?=alias_info_popup($alias['target'])?>" data-html="true">
+<?php
+	endif;
+?>
 
-						<td >
-							<?=htmlspecialchars($natent['target'])?>
+							<?=str_replace('_', ' ', htmlspecialchars($natent['target']))?>
+<?php
+	if (isset($alias['target'])):
+?>
+							</a>
+<?php
+	endif;
+?>
 						</td>
 						<td>
 <?php
-	$localport = $natent['local-port'];
-
-	list($dstbeginport, $dstendport) = explode("-", $natent['destination']['port']);
-
-	if ($dstendport) {
-		$localendport = $natent['local-port'] + $dstendport - $dstbeginport;
-		$localport	 .= '-' . $localendport;
-	}
+	if (isset($alias['targetport'])):
 ?>
-							<?=htmlspecialchars(pprint_port($localport))?>
+							<a href="/firewall_aliases_edit.php?id=<?=$alias['targetport']?>" data-toggle="popover" data-trigger="hover focus" title="<?=gettext('Alias details')?>" data-content="<?=alias_info_popup($alias['targetport'])?>" data-html="true">
+<?php
+	endif;
+?>
+							<?=str_replace('_', ' ', htmlspecialchars(pprint_port($localport)))?>
+<?php
+	if (isset($alias['targetport'])):
+?>
+							</a>
+<?php
+	endif;
+?>
 						</td>
 
 						<td>
@@ -506,7 +502,7 @@ events.push(function() {
 	// provide a warning message if the user tries to change page before saving
 	$(window).bind('beforeunload', function(){
 		if (!saving && dirty) {
-			return ("<?=gettext('You have moved one or more Port Forward rules but have not yet saved')?>");
+			return ("<?=gettext('One or more Port Forward rules have been moved but have not yet been saved')?>");
 		} else {
 			return undefined;
 		}

@@ -1,60 +1,27 @@
 <?php
 /*
-	services_dnsmasq.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
- *	Copyright (c)  2003-2004 Bob Zoller <bob@kludgebox.com> and Manuel Kasper <mk@neon1.net
+ * services_dnsmasq.php
  *
- *	Some or all of this file is based on the m0n0wall project which is
- *	Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * Copyright (c) 2003-2004 Bob Zoller <bob@kludgebox.com>
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -64,7 +31,7 @@
 ##|*MATCH=services_dnsmasq.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
 require_once("shaper.inc");
@@ -138,7 +105,7 @@ if ($_POST) {
 			if (is_port($_POST['port'])) {
 				$config['dnsmasq']['port'] = $_POST['port'];
 			} else {
-				$input_errors[] = gettext("You must specify a valid port number");
+				$input_errors[] = gettext("A valid port number must be specified.");
 			}
 		} else if (isset($config['dnsmasq']['port'])) {
 			unset($config['dnsmasq']['port']);
@@ -225,7 +192,7 @@ if ($savemsg) {
 }
 
 if (is_subsystem_dirty('hosts')) {
-	print_apply_box(gettext("The DNS forwarder configuration has been changed.") . "<br />" . gettext("You must apply the changes in order for them to take effect."));
+	print_apply_box(gettext("The DNS forwarder configuration has been changed.") . "<br />" . gettext("The changes must be applied for them to take effect."));
 }
 
 $form = new Form();
@@ -247,8 +214,8 @@ $section->addInput(new Form_Checkbox(
 ))->setHelp(sprintf("If this option is set, then machines that specify".
 			" their hostname when requesting a DHCP lease will be registered".
 			" in the DNS forwarder, so that their name can be resolved.".
-			" You should also set the domain in %sSystem:".
-			" General setup%s to the proper value.",'<a href="system.php">','</a>'))
+			" The domain in %sSystem: General Setup%s should also".
+			" be set to the proper value.",'<a href="system.php">','</a>'))
 	->addClass('toggle-dhcp');
 
 $section->addInput(new Form_Checkbox(
@@ -258,8 +225,8 @@ $section->addInput(new Form_Checkbox(
 	$pconfig['regdhcpstatic']
 ))->setHelp(sprintf("If this option is set, then DHCP static mappings will ".
 					"be registered in the DNS forwarder, so that their name can be ".
-					"resolved. You should also set the domain in %s".
-					"System: General setup%s to the proper value.",'<a href="system.php">','</a>'))
+					"resolved. The domain in %sSystem: General Setup%s should also ".
+					"be set to the proper value.",'<a href="system.php">','</a>'))
 	->addClass('toggle-dhcp');
 
 $section->addInput(new Form_Checkbox(
@@ -336,39 +303,17 @@ $section->addInput(new Form_Textarea(
 	'custom_options',
 	'Custom options',
 	$pconfig['custom_options']
-))->setHelp('Enter any additional options you would like to add to the dnsmasq configuration here, separated by a space or newline')
+))->setHelp('Enter any additional options to add to the dnsmasq configuration here, separated by a space or newline.')
   ->addClass('advanced');
 
 $form->add($section);
 print($form);
 
 ?>
-<div class="infoblock">
-<?php
-print_callout('<p>' .
-	gettext('If the DNS forwarder is enabled, the DHCP service (if enabled) will automatically' .
-		    ' serve the LAN IP address as a DNS server to DHCP clients so they will use the forwarder.') . '</p><p>' .
-	sprintf(gettext('The DNS forwarder will use the DNS servers entered in %1$sSystem > General Setup%2$s or' .
-				    ' those obtained via DHCP or PPP on WAN if &quot;Allow DNS server list to be overridden by DHCP/PPP on WAN&quot; is checked.' .
-				    ' If you don\'t use that option (or if you use a static IP address on WAN),' .
-				    ' you must manually specify at least one DNS server on the %1$sSystem > General Setup%2$s page.'),
-			'<a href="system.php">',
-			'</a>') .
-	'</p>'
-);
-
-?>
-</div>
-<?php
-print_callout(gettext("Entries in this section override individual results from the forwarders.") . " " .
-	gettext("Use these for changing DNS results or for adding custom DNS records.")
-);
-?>
-
 <div class="panel panel-default">
 	<div class="panel-heading"><h2 class="panel-title"><?=gettext("Host Overrides")?></h2></div>
 	<div class="panel-body table-responsive">
-		<table class="table table-striped table-hover table-condensed sortable-theme-bootstrap" data-sortable>
+		<table class="table table-striped table-hover table-condensed sortable-theme-bootstrap table-rowdblclickedit" data-sortable>
 			<thead>
 				<tr>
 					<th><?=gettext("Host")?></th>
@@ -403,7 +348,7 @@ foreach ($a_hosts as $i => $hostent):
 
 <?php
 	if ($hostent['aliases']['item'] && is_array($hostent['aliases']['item'])):
-		foreach ($hostent['aliases']['item'] as $i => $alias):
+		foreach ($hostent['aliases']['item'] as $alias):
 ?>
 				<tr>
 					<td>
@@ -440,16 +385,10 @@ endforeach;
 	</a>
 </nav>
 
-<?php
-print_callout(gettext("Entries in this area override an entire domain, and subdomains, by specifying an".
-	" authoritative DNS server to be queried for that domain.")
-);
-?>
-
 <div class="panel panel-default">
 	<div class="panel-heading"><h2 class="panel-title"><?=gettext("Domain Overrides")?></h2></div>
 	<div class="panel-body table-responsive">
-		<table class="table table-striped table-hover table-condensed sortable-theme-bootstrap" data-sortable>
+		<table class="table table-striped table-hover table-condensed sortable-theme-bootstrap table-rowdblclickedit" data-sortable>
 			<thead>
 				<tr>
 					<th><?=gettext("Domain")?></th>
@@ -492,6 +431,24 @@ endforeach;
 		<?=gettext('Add')?>
 	</a>
 </nav>
+<div class="infoblock">
+<?php
+print_info_box(
+	'<p>' .
+	gettext('If the DNS forwarder is enabled, the DHCP service (if enabled) will automatically' .
+		    ' serve the LAN IP address as a DNS server to DHCP clients so they will use the forwarder.') . '</p><p>' .
+	sprintf(gettext('The DNS forwarder will use the DNS servers entered in %1$sSystem > General Setup%2$s or' .
+				    ' those obtained via DHCP or PPP on WAN if &quot;Allow DNS server list to be overridden by DHCP/PPP on WAN&quot; is checked.' .
+				    ' If that option is not used (or if a static IP address is used on WAN),' .
+				    ' at least one DNS server must be manually specified on the %1$sSystem > General Setup%2$s page.'),
+			'<a href="system.php">',
+			'</a>') .
+	'</p>',
+	'info',
+	false
+);
+?>
+</div>
 
 <?php
 include("foot.inc");

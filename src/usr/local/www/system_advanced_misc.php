@@ -1,60 +1,27 @@
 <?php
 /*
-	system_advanced_misc.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
- *	Copyright (c)  2008 Shrew Soft Inc
+ * system_advanced_misc.php
  *
- *	Some or all of this file is based on the m0n0wall project which is
- *	Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * Copyright (c) 2008 Shrew Soft Inc
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -64,7 +31,7 @@
 ##|*MATCH=system_advanced_misc.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
 require_once("shaper.inc");
@@ -114,7 +81,6 @@ $thermal_hardware_modules = array(
 	'amdtemp' => gettext("AMD K8, K10 and K11 CPU on-die thermal sensor"));
 
 if ($_POST) {
-
 	unset($input_errors);
 	$pconfig = $_POST;
 
@@ -194,8 +160,8 @@ if ($_POST) {
 				$config['system']['lb_use_sticky'] = true;
 				$need_relayd_restart = true;
 			}
-			if ($config['system']['srctrack'] != $_POST['source-tracking-timeout']) {
-				$config['system']['srctrack'] = $_POST['source-tracking-timeout'];
+			if ($config['system']['srctrack'] != $_POST['srctrack']) {
+				$config['system']['srctrack'] = $_POST['srctrack'];
 				$need_relayd_restart = true;
 			}
 		} else {
@@ -273,11 +239,28 @@ if ($_POST) {
 		$config['system']['use_mfs_var_size'] = $_POST['use_mfs_var_size'];
 
 		if (isset($_POST['rrdbackup'])) {
-			$config['system']['rrdbackup'] = $_POST['rrdbackup'];
-			install_cron_job("/etc/rc.backup_rrd.sh", ($config['system']['rrdbackup'] > 0), $minute="0", "*/{$config['system']['rrdbackup']}");
+			if (($_POST['rrdbackup'] > 0) && ($_POST['rrdbackup'] <= 24)) {
+				$config['system']['rrdbackup'] = intval($_POST['rrdbackup']);
+			} else {
+				unset($config['system']['rrdbackup']);
+			}
 		}
 		if (isset($_POST['dhcpbackup'])) {
-			$config['system']['dhcpbackup'] = $_POST['dhcpbackup'];
+			if (($_POST['dhcpbackup'] > 0) && ($_POST['dhcpbackup'] <= 24)) {
+				$config['system']['dhcpbackup'] = intval($_POST['dhcpbackup']);
+			} else {
+				unset($config['system']['dhcpbackup']);
+			}
+		}
+
+		// Add/Remove RAM disk periodic backup cron jobs according to settings and installation type.
+		// Remove the cron jobs on full install if not using RAM disk.
+		// Add the cron jobs on all others if the periodic backup option is set.  Otherwise the cron job is removed.
+		if (($g['platform'] == $g['product_name']) && !isset($config['system']['use_mfs_tmpvar'])) {
+			install_cron_job("/etc/rc.backup_rrd.sh", false);
+			install_cron_job("/etc/rc.backup_dhcpleases.sh", false);
+		} else {
+			install_cron_job("/etc/rc.backup_rrd.sh", ($config['system']['rrdbackup'] > 0), $minute="0", "*/{$config['system']['rrdbackup']}");
 			install_cron_job("/etc/rc.backup_dhcpleases.sh", ($config['system']['dhcpbackup'] > 0), $minute="0", "*/{$config['system']['dhcpbackup']}");
 		}
 
@@ -306,6 +289,7 @@ include("head.inc");
 
 if ($input_errors) {
 	print_input_errors($input_errors);
+	unset($pconfig['doreboot']);
 }
 
 if ($savemsg) {
@@ -377,7 +361,7 @@ $group->add(new Form_Input(
 	'Source tracking timeout',
 	'number',
 	$pconfig['srctrack'],
-	['placeholder' => 0]
+	["placeholder" => "0"]
 ))->setHelp('Set the source tracking timeout for sticky connections. By default '.
 	'this is 0, so source tracking is removed as soon as the state expires. '.
 	'Setting this timeout higher will cause the source/destination relationship '.
@@ -454,12 +438,12 @@ $section->addInput(new Form_Select(
 	['' => gettext('None')] + $crypto_modules
 ))->setHelp('A cryptographic '.
 	'accelerator module will use hardware support to speed up some cryptographic '.
-	'functions on systems which have the chip. Do not enable this option if you have '.
+	'functions on systems which have the chip. Do not enable this option with '.
 	'a Hifn cryptographic acceleration card, as this will take precedence and the '.
 	'Hifn card will not be used. Acceleration should be automatic for IPsec when '.
-	'using a cipher supported by your chip, such as AES-128. OpenVPN should be set '.
-	'for AES-128-CBC and have cryptodev enabled for hardware acceleration.If you do '.
-	'not have a crypto chip in your system, this option will have no effect. To '.
+	'using a cipher supported by the chip, such as AES-128. OpenVPN should be set '.
+	'for AES-128-CBC and have cryptodev enabled for hardware acceleration. If there '.
+	'is not a crypto chip in the system, this option will have no effect. To '.
 	'unload the selected module, set this option to "none" and then reboot.');
 
 $section->addInput(new Form_Select(
@@ -467,11 +451,11 @@ $section->addInput(new Form_Select(
 	'Thermal Sensors',
 	$pconfig['thermal_hardware'],
 	array('' => 'None/ACPI') + $thermal_hardware_modules
-))->setHelp('If you have a '.
-	'supported CPU, selecting a themal sensor will load the appropriate driver to '.
+))->setHelp('With a '.
+	'supported CPU, selecting a thermal sensor will load the appropriate driver to '.
 	'read its temperature. Setting this to "None" will attempt to read the '.
 	'temperature from an ACPI-compliant motherboard sensor instead, if one is '.
-	'present.If you do not have a supported thermal sensor chip in your system, this '.
+	'present. If there is not a supported thermal sensor chip in the system, this '.
 	'option will have no effect. To unload the selected module, set this option to '.
 	'"none" and then reboot.');
 
@@ -515,10 +499,10 @@ $section->addInput(new Form_Checkbox(
 	'Use RAM Disks',
 	'Use memory file system for /tmp and /var',
 	($pconfig['use_mfs_tmpvar'] || $g['platform'] != $g['product_name'])
-))->setHelp('Set this if you wish to use /tmp and /var as RAM disks (memory file '.
+))->setHelp('Set this to use /tmp and /var as RAM disks (memory file '.
 	'system disks) on a full install rather than use the hard disk. Setting this will '.
-	'cause the data in /tmp and /var to be lost at reboot, including log data. RRD '.
-	'and DHCP Leases will be retained.');
+	'cause the data in /tmp and /var to be lost, including log data. RRD '.
+	'and DHCP Leases will be retained. Changing this setting will cause the firewall to reboot after clicking "Save".');
 
 $section->addInput(new Form_Input(
 	'use_mfs_tmp_size',
@@ -543,20 +527,20 @@ $section->addInput(new Form_Input(
 	'Periodic RRD Backup',
 	'number',
 	$config['system']['rrdbackup'],
-	['min' => 1, 'max' => 24, 'placeholder' => 'frequency between 1 and 24 hours']
+	['min' => 0, 'max' => 24, 'placeholder' => 'Period between 1 and 24 hours']
 ))->setHelp('This will periodically backup the RRD data so '.
 	'it can be restored automatically on the next boot. Keep in mind that the more '.
-	'frequent the backup, the more writes will happen to your media.');
+	'frequent the backup, the more writes will happen to the media.');
 
 $section->addInput(new Form_Input(
 	'dhcpbackup',
 	'Periodic DHCP Leases Backup',
 	'number',
 	$config['system']['dhcpbackup'],
-	['min' => 1, 'max' => 24, 'placeholder' => 'frequency between 1 and 24 hours']
+	['min' => 0, 'max' => 24, 'placeholder' => 'Period between 1 and 24 hours']
 ))->setHelp('This will periodically backup the DHCP leases so '.
 	'it can be restored automatically on the next boot. Keep in mind that the more '.
-	'frequent the backup, the more writes will happen to your media.');
+	'frequent the backup, the more writes will happen to the media.');
 
 $form->add($section);
 
@@ -590,4 +574,43 @@ $form->add($section);
 
 print $form;
 
+$ramdisk_msg = gettext('The \"Use Ramdisk\" setting has been changed. This will cause the firewall\nto reboot immediately after the new setting is saved.\n\nPlease confirm.');?>
+
+<script>
+//<![CDATA[
+events.push(function() {
+	// Record the state of the Use Ramdisk checkbox on page load
+	use_ramdisk = $('#use_mfs_tmpvar').prop('checked');
+
+	$('form').submit(function(event) {
+		// Has the Use ramdisk checkbox changed state?
+		if ($('#use_mfs_tmpvar').prop('checked') != use_ramdisk) {
+			if (confirm("<?=$ramdisk_msg?>")) {
+				$('form').append('<input type="hidden" name="doreboot" id="doreboot" value="yes"/>');
+			} else {
+				event.preventDefault();
+			}
+		}
+	});
+
+    drb = "<?=$pconfig['doreboot']?>";
+
+	if (drb == "yes") {
+		$('form').append("<input type=\"hidden\" name=\"override\" value=\"yes\" />");
+		$('form').get(0).setAttribute('action', 'diag_reboot.php');
+		$(form).submit();
+	}
+
+	// source track timeout field is disabled if sticky connections not enabled
+	$('#lb_use_sticky').click(function () {
+		disableInput('srctrack', !$(this).prop("checked"));
+	});
+
+	disableInput('srctrack', !$('#lb_use_sticky').prop("checked"));
+
+});
+//]]>
+</script>
+
+<?php
 include("foot.inc");

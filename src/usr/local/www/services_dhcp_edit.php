@@ -1,59 +1,26 @@
 <?php
 /*
-	services_dhcp_edit.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * services_dhcp_edit.php
  *
- *	Some or all of this file is based on the m0n0wall project which is
- *	Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -80,7 +47,7 @@ if (!$g['services_dhcp_server_enable']) {
 	exit;
 }
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 
 $if = $_GET['if'];
 
@@ -214,7 +181,7 @@ if ($_POST) {
 		$input_errors[] = gettext("A valid MAC address must be specified.");
 	}
 	if ($static_arp_enabled && !$_POST['ipaddr']) {
-		$input_errors[] = gettext("Static ARP is enabled.  You must specify an IP address.");
+		$input_errors[] = gettext("Static ARP is enabled.  An IP address must be specified.");
 	}
 
 	/* check for overlaps */
@@ -299,7 +266,7 @@ if ($_POST) {
 	}
 	if (($_POST['ddnsdomainkey'] && !$_POST['ddnsdomainkeyname']) ||
 	    ($_POST['ddnsdomainkeyname'] && !$_POST['ddnsdomainkey'])) {
-		$input_errors[] = gettext("You must specify both a valid domain key and key name.");
+		$input_errors[] = gettext("Both a valid domain key and key name must be specified.");
 	}
 	if ($_POST['domainsearchlist']) {
 		$domain_array=preg_split("/[ ;]+/", $_POST['domainsearchlist']);
@@ -439,9 +406,9 @@ $btnmymac = new Form_Button(
 	'fa-clone'
 	);
 
-$btnmymac->removeClass('btn-primary')->addClass('btn-success btn-sm');
+$btnmymac->setAttribute('type','button')->removeClass('btn-primary')->addClass('btn-success btn-sm');
 
-$group = new Form_Group('MAC controls');
+$group = new Form_Group('MAC Address');
 $group->add($macaddress);
 $group->add($btnmymac);
 $group->setHelp('MAC address (6 hex octets separated by colons)');
@@ -489,7 +456,7 @@ $section->addInput(new Form_Input(
 	'Description',
 	'text',
 	$pconfig['descr']
-))->setHelp('You may enter a description here for your reference (not parsed).');
+))->setHelp('A description may be entered here for administrative reference (not parsed).');
 
 $section->addInput(new Form_Checkbox(
 	'arp_table_static_entry',
@@ -560,21 +527,21 @@ $section->addInput(new Form_Input(
 	'Gateway',
 	'text',
 	$pconfig['gateway']
-))->setHelp('The default is to use the IP on this interface of the firewall as the gateway. Specify an alternate gateway here if this is not the correct gateway for your network.');
+))->setHelp('The default is to use the IP on this interface of the firewall as the gateway. Specify an alternate gateway here if this is not the correct gateway for the network.');
 
 $section->addInput(new Form_Input(
 	'domain',
 	'Domain name',
 	'text',
 	$pconfig['domain']
-))->setHelp('The default is to use the domain name of this system as the default domain name provided by DHCP. You may specify an alternate domain name here. ');
+))->setHelp('The default is to use the domain name of this system as the default domain name provided by DHCP. An alternate domain name may be specified here. ');
 
 $section->addInput(new Form_Input(
 	'domainsearchlist',
 	'Domain search list',
 	'text',
 	$pconfig['domainsearchlist']
-))->setHelp('The DHCP server can optionally provide a domain search list. Use the semicolon character as separator');
+))->setHelp('The DHCP server can optionally provide a domain search list. Use the semicolon character as separator.');
 
 $section->addInput(new Form_Input(
 	'deftime',
@@ -590,18 +557,18 @@ $section->addInput(new Form_Input(
 	$pconfig['maxtime']
 ))->setHelp('This is the maximum lease time for clients that ask for a specific expiration time. The default is 86400 seconds.');
 
-$btndyndns = new Form_Button(
-	'btndyndns',
-	'Advanced',
+$btnadv = new Form_Button(
+	'btnadvdns',
+	'Display Advanced',
 	null,
 	'fa-cog'
 );
 
-$btndyndns->addClass('btn-info btn-sm');
+$btnadv->setAttribute('type','button')->addClass('btn-info btn-sm');
 
 $section->addInput(new Form_StaticText(
 	'Dynamic DNS',
-	$btndyndns
+	$btnadv
 ));
 
 $section->addInput(new Form_Checkbox(
@@ -638,18 +605,18 @@ $section->addInput(new Form_Input(
 	$pconfig['ddnsdomainkey']
 ))->setHelp('Enter the dynamic DNS domain key secret which will be used to register client names in the DNS server.');
 
-$btnntp = new Form_Button(
-	'btnntp',
-	'Advanced',
+$btnadv = new Form_Button(
+	'btnadvntp',
+	'Display Advanced',
 	null,
 	'fa-cog'
 );
 
-$btnntp->addClass('btn-info btn-sm');
+$btnadv->setAttribute('type','button')->addClass('btn-info btn-sm');
 
 $section->addInput(new Form_StaticText(
 	'NTP servers',
-	$btnntp
+	$btnadv
 ));
 
 $group = new Form_Group('NTP Servers');
@@ -674,18 +641,18 @@ $group->addClass('ntpclass');
 
 $section->add($group);
 
-$btntftp = new Form_Button(
-	'btntftp',
-	'Advanced',
+$btnadv = new Form_Button(
+	'btnadvtftp',
+	'Display Advanced',
 	null,
 	'fa-cog'
 );
 
-$btntftp->addClass('btn-info btn-sm');
+$btnadv->setAttribute('type','button')->addClass('btn-info btn-sm');
 
 $section->addInput(new Form_StaticText(
 	'TFTP servers',
-	$btntftp
+	$btnadv
 ));
 
 $section->addInput(new Form_Input(
@@ -703,50 +670,123 @@ print($form);
 //<![CDATA[
 events.push(function() {
 
-	function hideDDNS(hide) {
-		hideCheckbox('ddnsupdate', hide);
-		hideInput('ddnsdomain', hide);
-		hideInput('ddnsdomainprimary', hide);
-		hideInput('ddnsdomainkeyname', hide);
-		hideInput('ddnsdomainkey', hide);
+	// Show advanced DNS options ======================================================================================
+	var showadvdns = false;
+
+	function show_advdns(ispageload) {
+		var text;
+		// On page load decide the initial state based on the data.
+		if (ispageload) {
+<?php
+			if (!$pconfig['ddnsupdate'] && empty($pconfig['ddnsdomain']) && empty($pconfig['ddnsdomainprimary']) &&
+			    empty($pconfig['ddnsdomainkeyname']) && empty($pconfig['ddnsdomainkey'])) {
+				$showadv = false;
+			} else {
+				$showadv = true;
+			}
+?>
+			showadvdns = <?php if ($showadv) {echo 'true';} else {echo 'false';} ?>;
+		} else {
+			// It was a click, swap the state.
+			showadvdns = !showadvdns;
+		}
+
+		hideCheckbox('ddnsupdate', !showadvdns);
+		hideInput('ddnsdomain', !showadvdns);
+		hideInput('ddnsdomainprimary', !showadvdns);
+		hideInput('ddnsdomainkeyname', !showadvdns);
+		hideInput('ddnsdomainkey', !showadvdns);
+
+		if (showadvdns) {
+			text = "<?=gettext('Hide Advanced');?>";
+		} else {
+			text = "<?=gettext('Display Advanced');?>";
+		}
+		$('#btnadvdns').html('<i class="fa fa-cog"></i> ' + text);
 	}
 
-	// Make the ‘Copy My MAC’ button a plain button, not a submit button
-	$("#btnmymac").prop('type','button');
+	$('#btnadvdns').click(function(event) {
+		show_advdns();
+	});
+
+	// Show advanced NTP options ======================================================================================
+	var showadvntp = false;
+
+	function show_advntp(ispageload) {
+		var text;
+		// On page load decide the initial state based on the data.
+		if (ispageload) {
+<?php
+			if (empty($pconfig['ntp1']) && empty($pconfig['ntp2'])) {
+				$showadv = false;
+			} else {
+				$showadv = true;
+			}
+?>
+			showadvntp = <?php if ($showadv) {echo 'true';} else {echo 'false';} ?>;
+		} else {
+			// It was a click, swap the state.
+			showadvntp = !showadvntp;
+		}
+
+		hideInput('ntp1', !showadvntp);
+		hideInput('ntp2', !showadvntp);
+
+		if (showadvntp) {
+			text = "<?=gettext('Hide Advanced');?>";
+		} else {
+			text = "<?=gettext('Display Advanced');?>";
+		}
+		$('#btnadvntp').html('<i class="fa fa-cog"></i> ' + text);
+	}
+
+	$('#btnadvntp').click(function(event) {
+		show_advntp();
+	});
+
+	// Show advanced TFTP options ======================================================================================
+	var showadvtftp = false;
+
+	function show_advtftp(ispageload) {
+		var text;
+		// On page load decide the initial state based on the data.
+		if (ispageload) {
+<?php
+			if (empty($pconfig['tftp'])) {
+				$showadv = false;
+			} else {
+				$showadv = true;
+			}
+?>
+			showadvtftp = <?php if ($showadv) {echo 'true';} else {echo 'false';} ?>;
+		} else {
+			// It was a click, swap the state.
+			showadvtftp = !showadvtftp;
+		}
+
+		hideInput('tftp', !showadvtftp);
+
+		if (showadvtftp) {
+			text = "<?=gettext('Hide Advanced');?>";
+		} else {
+			text = "<?=gettext('Display Advanced');?>";
+		}
+		$('#btnadvtftp').html('<i class="fa fa-cog"></i> ' + text);
+	}
+
+	$('#btnadvtftp').click(function(event) {
+		show_advtftp();
+	});
 
 	// On click, copy the hidden 'mymac' text to the 'mac' input
 	$("#btnmymac").click(function() {
 		$('#mac').val('<?=$mymac?>');
 	});
 
-	// Make the ‘tftp’ button a plain button, not a submit button
-	$("#btntftp").prop('type','button');
-
-	// Show tftp controls
-	$("#btntftp").click(function() {
-		hideInput('tftp', false);
-	});
-
-	// Make the ‘ntp’ button a plain button, not a submit button
-	$("#btnntp").prop('type','button');
-
-	// Show ntp controls
-	$("#btnntp").click(function() {
-		hideClass('ntpclass', false);
-	});
-
-	// Make the ‘ddns’ button a plain button, not a submit button
-	$("#btndyndns").prop('type','button');
-
-	// Show ddns controls
-	$("#btndyndns").click(function() {
-		hideDDNS(false);
-	});
-
 	// On initial load
-	hideDDNS(true);
-	hideClass('ntpclass', true);
-	hideInput('tftp', true);
+	show_advdns(true);
+	show_advntp(true);
+	show_advtftp(true);
 });
 //]]>
 </script>

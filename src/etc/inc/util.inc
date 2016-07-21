@@ -1,59 +1,26 @@
 <?php
 /*
-	util.inc
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * util.inc
  *
- *  Some or all of this file is based on the m0n0wall project which is
- *  Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally part of m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 define('VIP_ALL', 1);
@@ -148,7 +115,7 @@ function config_unlock() {
 function lock($lock, $op = LOCK_SH) {
 	global $g, $cfglckkeyconsumers;
 	if (!$lock) {
-		die(gettext("WARNING: You must give a name as parameter to lock() function."));
+		die(gettext("WARNING: A name must be given as parameter to lock() function."));
 	}
 	if (!file_exists("{$g['tmp_path']}/{$lock}.lock")) {
 		@touch("{$g['tmp_path']}/{$lock}.lock");
@@ -167,7 +134,7 @@ function lock($lock, $op = LOCK_SH) {
 function try_lock($lock, $timeout = 5) {
 	global $g, $cfglckkeyconsumers;
 	if (!$lock) {
-		die(gettext("WARNING: You must give a name as parameter to try_lock() function."));
+		die(gettext("WARNING: A name must be given as parameter to try_lock() function."));
 	}
 	if (!file_exists("{$g['tmp_path']}/{$lock}.lock")) {
 		@touch("{$g['tmp_path']}/{$lock}.lock");
@@ -839,12 +806,9 @@ function is_subnetoralias($subnet) {
    Returns 0 for bad data or if cannot represent size as an INT when $exact is set. */
 function subnet_size($subnet, $exact=false) {
 	$parts = explode("/", $subnet);
-	if (count($parts) == 2) {
-		if (is_ipaddrv4($parts[0])) {
-			return subnet_size_by_netmask(4, $parts[1], $exact);
-		} elseif (is_ipaddrv6($parts[0])) {
-			return subnet_size_by_netmask(6, $parts[1], $exact);
-		}
+	$iptype = is_ipaddr($parts[0]);
+	if (count($parts) == 2 && $iptype) {
+		return subnet_size_by_netmask($iptype, $parts[1], $exact);
 	}
 	return 0;
 }
@@ -877,17 +841,7 @@ function subnet_size_by_netmask($iptype, $bits, $exact=false) {
 	}
 }
 
-
-function subnet_expand($subnet) {
-	if (is_subnetv4($subnet)) {
-		return subnetv4_expand($subnet);
-	} else if (is_subnetv6($subnet)) {
-		return subnetv6_expand($subnet);
-	} else {
-		return $subnet;
-	}
-}
-
+/* function used by pfblockerng */
 function subnetv4_expand($subnet) {
 	$result = array();
 	list ($ip, $bits) = explode("/", $subnet);
@@ -1058,25 +1012,61 @@ function is_macaddr($macaddr, $partial=false) {
 	return preg_match('/^[0-9A-F]{2}(?:[:][0-9A-F]{2}){'.$repeat.'}$/i', $macaddr) == 1 ? true : false;
 }
 
-/* returns true if $name is a valid name for an alias
-   returns NULL if a reserved word is used
-   returns FALSE for bad chars in the name - this allows calling code to determine what the problem was.
-   aliases cannot be:
-	bad chars: anything except a-z 0-9 and underscore
-	bad names: empty string, pure numeric, pure underscore
-	reserved words: pre-defined service/protocol/port names which should not be ambiguous, and the words "port" and  "pass" */
+/*
+	If $return_message is true then
+		returns a text message about the reason that the name is invalid.
+		the text includes the type of "thing" that is being checked, passed in $object. (e.g. "alias", "gateway group", "schedule")
+	else
+		returns true if $name is a valid name for an alias
+		returns false if $name is not a valid name for an alias
 
-function is_validaliasname($name) {
+	Aliases cannot be:
+		bad chars: anything except a-z 0-9 and underscore
+		bad names: empty string, pure numeric, pure underscore
+		reserved words: pre-defined service/protocol/port names which should not be ambiguous, and the words "port" and  "pass" */
+
+function is_validaliasname($name, $return_message = false, $object = "alias") {
 	/* Array of reserved words */
 	$reserved = array("port", "pass");
 
 	if (!is_string($name) || strlen($name) >= 32 || preg_match('/(^_*$|^\d*$|[^a-z0-9_])/i', $name)) {
-		return false;
+		if ($return_message) {
+			return sprintf(gettext('The %1$s name must be less than 32 characters long, may not consist of only numbers, may not consist of only underscores, and may only contain the following characters: %2$s'), $object, 'a-z, A-Z, 0-9, _');
+		} else {
+			return false;
+		}
 	}
-	if (in_array($name, $reserved, true) || getservbyname($name, "tcp") || getservbyname($name, "udp") || getprotobyname($name)) {
-		return; /* return NULL */
+	if (in_array($name, $reserved, true)) {
+		if ($return_message) {
+			return sprintf(gettext('The %1$s name must not be either of the reserved words %2$s or %3$s.'), $object, "'port'", "'pass'");
+		} else {
+			return false;
+		}
 	}
-	return true;
+	if (getprotobyname($name)) {
+		if ($return_message) {
+			return sprintf(gettext('The %1$s name must not be a well-known IP protocol name such as TCP, UDP, ICMP etc.'), $object);
+		} else {
+			return false;
+		}
+	}
+	if (getservbyname($name, "tcp") || getservbyname($name, "udp")) {
+		if ($return_message) {
+			return sprintf(gettext('The %1$s name must not be a well-known TCP or UDP port name such as ssh, smtp, pop3, tftp, http, openvpn etc.'), $object);
+		} else {
+			return false;
+		}
+	}
+	if ($return_message) {
+		return sprintf(gettext("The %1$s name is valid."), $object);
+	} else {
+		return true;
+	}
+}
+
+/* returns a text message indicating if the alias name is valid, or the reason it is not valid. */
+function invalidaliasnamemsg($name, $object = "alias") {
+	return is_validaliasname($name, true, $object);
 }
 
 /* returns true if $port is a valid TCP/UDP port */
@@ -1433,13 +1423,13 @@ function get_configured_ip_addresses() {
  *   IPv6 addresses.
  *
  */
-function get_configured_ipv6_addresses() {
+function get_configured_ipv6_addresses($linklocal_fallback = false) {
 	require_once("interfaces.inc");
 	$ipv6_array = array();
 	$interfaces = get_configured_interface_list();
 	if (is_array($interfaces)) {
 		foreach ($interfaces as $int) {
-			$ipaddrv6 = get_interface_ipv6($int);
+			$ipaddrv6 = get_interface_ipv6($int, false, $linklocal_fallback);
 			$ipv6_array[$int] = $ipaddrv6;
 		}
 	}
@@ -1750,7 +1740,11 @@ function alias_expand_urltable($name) {
 	if (is_array($config['aliases']['alias'])) {
 		foreach ($config['aliases']['alias'] as $alias) {
 			if (preg_match("/urltable/i", $alias['type']) && ($alias['name'] == $name)) {
-				if (is_URL($alias["url"]) && file_exists($urltable_filename) && filesize($urltable_filename)) {
+				if (is_URL($alias["url"]) && file_exists($urltable_filename)) {
+					if (!filesize($urltable_filename)) {
+						// file exists, but is empty, try to sync
+						send_event("service sync alias {$name}");
+					}
 					return $urltable_filename;
 				} else {
 					send_event("service sync alias {$name}");
@@ -2067,8 +2061,10 @@ function unmute_kernel_msgs() {
 }
 
 function start_devd() {
+	global $g;
+
 	/* Use the undocumented -q options of devd to quiet its log spamming */
-	$_gb = exec("/sbin/devd -q");
+	$_gb = exec("/sbin/devd -q -f /etc/{$g['product_name']}-devd.conf");
 	sleep(1);
 	unset($_gb);
 }

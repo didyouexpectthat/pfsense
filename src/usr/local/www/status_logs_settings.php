@@ -1,59 +1,26 @@
 <?php
 /*
-	status_logs_settings.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * status_logs_settings.php
  *
- *  Some or all of this file is based on the m0n0wall project which is
- *  Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -63,7 +30,7 @@
 ##|*MATCH=status_logs_settings.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
 require_once("shaper.inc");
@@ -94,6 +61,7 @@ $pconfig['rawfilter'] = isset($config['syslog']['rawfilter']);
 $pconfig['filterdescriptions'] = $config['syslog']['filterdescriptions'];
 $pconfig['disablelocallogging'] = isset($config['syslog']['disablelocallogging']);
 $pconfig['logfilesize'] = $config['syslog']['logfilesize'];
+$pconfig['igmpxverbose'] = isset($config['syslog']['igmpxverbose']);
 
 if (!$pconfig['nentries']) {
 	$pconfig['nentries'] = 50;
@@ -170,11 +138,14 @@ if ($_POST['resetlogs'] == gettext("Reset Log Files")) {
 		$config['syslog']['nologprivatenets'] = $_POST['logprivatenets'] ? false : true;
 		$config['syslog']['nolognginx'] = $_POST['lognginx'] ? false : true;
 		$config['syslog']['rawfilter'] = $_POST['rawfilter'] ? true : false;
+		$config['syslog']['igmpxverbose'] = $_POST['igmpxverbose'] ? true : false;
+
 		if (is_numeric($_POST['filterdescriptions']) && $_POST['filterdescriptions'] > 0) {
 			$config['syslog']['filterdescriptions'] = $_POST['filterdescriptions'];
 		} else {
 			unset($config['syslog']['filterdescriptions']);
 		}
+
 		if ($config['syslog']['enable'] == false) {
 			unset($config['syslog']['remoteserver']);
 			unset($config['syslog']['remoteserver2']);
@@ -211,13 +182,13 @@ include("head.inc");
 
 $logfilesizeHelp =	gettext("Logs are held in constant-size circular log files. This field controls how large each log file is, and thus how many entries may exist inside the log. By default this is approximately 500KB per log file, and there are nearly 20 such log files.") .
 					'<br /><br />' .
-					gettext("NOTE: Log sizes are changed the next time a log file is cleared or deleted. To immediately increase the size of the log files, you must first save the options to set the size, then clear all logs using the \"Reset Log Files\" option farther down this page. ") .
+					gettext("NOTE: Log sizes are changed the next time a log file is cleared or deleted. To immediately increase the size of the log files, first save the options to set the size, then clear all logs using the \"Reset Log Files\" option farther down this page. ") .
 					gettext("Be aware that increasing this value increases every log file size, so disk usage will increase significantly.") . '<br /><br />' .
 					gettext("Disk space currently used by log files is: ") . exec("/usr/bin/du -sh /var/log | /usr/bin/awk '{print $1;}'") .
 					gettext(" Remaining disk space for log files: ") . exec("/bin/df -h /var/log | /usr/bin/awk '{print $4;}'");
 
-$remoteloghelp =	gettext("This option will allow the logging daemon to bind to a single IP address, rather than all IP addresses.") .
-					gettext("If you pick a single IP, remote syslog servers must all be of that IP type. If you wish to mix IPv4 and IPv6 remote syslog servers, you must bind to all interfaces.") .
+$remoteloghelp =	gettext("This option will allow the logging daemon to bind to a single IP address, rather than all IP addresses.") . " " .
+					gettext("If a single IP is picked, remote syslog servers must all be of that IP type. To mix IPv4 and IPv6 remote syslog servers, bind to all interfaces.") .
 					"<br /><br />" .
 					gettext("NOTE: If an IP address cannot be located on the chosen interface, the daemon will bind to all addresses.");
 
@@ -303,14 +274,21 @@ $section->addInput(new Form_Checkbox(
 	'Web Server Log',
 	'Log errors from the web server process',
 	$pconfig['lognginx']
-))->setHelp('If this is checked, errors from the web server process for the GUI or Captive Portal will appear in the main system log');
+))->setHelp('If this is checked, errors from the web server process for the GUI or Captive Portal will appear in the main system log.');
 
 $section->addInput(new Form_Checkbox(
 	'rawfilter',
 	'Raw Logs',
 	'Show raw filter logs',
 	$pconfig['rawfilter']
-))->setHelp(gettext('If this is checked, filter logs are shown as generated by the packet filter, without any formatting. This will reveal more detailed information, but it is more difficult to read'));
+))->setHelp(gettext('If this is checked, filter logs are shown as generated by the packet filter, without any formatting. This will reveal more detailed information, but it is more difficult to read.'));
+
+$section->addINput(new Form_Checkbox(
+	'igmpxverbose',
+	'IGMP Proxy',
+	'Enable verbose logging (Default is terse logging)',
+	$pconfig['igmpxverbose']
+));
 
 $section->addInput(new Form_Select(
 	'filterdescriptions',
@@ -321,8 +299,8 @@ $section->addInput(new Form_Select(
 		'1' => gettext('Display as column'),
 		'2' => gettext('Display as second row')
 	)
-))->setHelp('Show the applied rule description below or in the firewall log rows' . '<br />' .
-			'Displaying rule descriptions for all lines in the log might affect performance with large rule sets');
+))->setHelp('Show the applied rule description below or in the firewall log rows.' . '<br />' .
+			'Displaying rule descriptions for all lines in the log might affect performance with large rule sets.');
 
 $section->addInput(new Form_Checkbox(
 	'disablelocallogging',
@@ -336,7 +314,7 @@ $section->addInput(new Form_Button(
 	'Reset Log Files',
 	null,
 	'fa-trash'
-))->addClass('btn-danger btn-sm')->setHelp('Clears all local log files and reinitializes them as empty logs. This also restarts the DHCP daemon. Use the Save button first if you have made any setting changes.');
+))->addClass('btn-danger btn-sm')->setHelp('Clears all local log files and reinitializes them as empty logs. This also restarts the DHCP daemon. Use the Save button first if any setting changes have been made.');
 
 $form->add($section);
 $section = new Form_Section('Remote Logging Options');

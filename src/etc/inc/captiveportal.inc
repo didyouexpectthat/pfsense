@@ -1,58 +1,27 @@
 <?php
 /*
-	captiveportal.inc
-
-	part of pfSense (https://www.pfsense.org)
-	Copyright (c) 2004-2016 Electric Sheep Fencing, LLC. All rights reserved.
-	Copyright (C) 2003-2006 Manuel Kasper <mk@neon1.net>.
-
-	originally part of m0n0wall (http://m0n0.ch/wall)
-	All rights reserved.
-
-	Redistribution and use in source and binary forms, with or without
-	modification, are permitted provided that the following conditions are met:
-
-	1. Redistributions of source code must retain the above copyright notice,
-	   this list of conditions and the following disclaimer.
-
-	2. Redistributions in binary form must reproduce the above copyright
-	   notice, this list of conditions and the following disclaimer in
-	   the documentation and/or other materials provided with the
-	   distribution.
-
-	3. All advertising materials mentioning features or use of this software
-	   must display the following acknowledgment:
-	   "This product includes software developed by the pfSense Project
-	   for use in the pfSense® software distribution. (http://www.pfsense.org/).
-
-	4. The names "pfSense" and "pfSense Project" must not be used to
-	   endorse or promote products derived from this software without
-	   prior written permission. For written permission, please contact
-	   coreteam@pfsense.org.
-
-	5. Products derived from this software may not be called "pfSense"
-	   nor may "pfSense" appear in their names without prior written
-	   permission of the Electric Sheep Fencing, LLC.
-
-	6. Redistributions of any form whatsoever must retain the following
-	   acknowledgment:
-
-	"This product includes software developed by the pfSense Project
-	for use in the pfSense software distribution (http://www.pfsense.org/).
-
-	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
-	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
-	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
-	OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ * captiveportal.inc
+ *
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
+ *
+ * originally part of m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2006 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /* include all configuration functions */
 require_once("config.inc");
@@ -76,7 +45,7 @@ function get_default_captive_portal_html() {
 	<input name="zone" type="hidden" value="\$PORTAL_ZONE\$">
 	<center>
 	<table cellpadding="6" cellspacing="0" width="550" height="380" style="border:1px solid #000000">
-	<tr height="10" bgcolor="#990000">
+	<tr height="10" style="background-color:#990000">
 		<td style="border-bottom:1px solid #000000">
 			<font color='white'>
 			<b>
@@ -112,8 +81,8 @@ function get_default_captive_portal_html() {
 								<table>
 									<tr><td colspan="2"><center>{$translated_text2}</td></tr>
 									<tr><td>&nbsp;</td></tr>
-									<tr><td align="right">{$translated_text3}</td><td><input name="auth_user" type="text" style="border: 1px dashed;"></td></tr>
-									<tr><td align="right">{$translated_text4}</td><td><input name="auth_pass" type="password" style="border: 1px dashed;"></td></tr>
+									<tr><td class="text-right">{$translated_text3}</td><td><input name="auth_user" type="text" style="border: 1px dashed;"></td></tr>
+									<tr><td class="text-right">{$translated_text4}</td><td><input name="auth_pass" type="password" style="border: 1px dashed;"></td></tr>
 									<tr><td>&nbsp;</td></tr>
 
 EOD;
@@ -122,7 +91,7 @@ EOD;
 		$translated_text = gettext("Enter Voucher Code:");
 		$htmltext .= <<<EOD
 									<tr>
-										<td align="right">{$translated_text} </td>
+										<td class="text-right">{$translated_text} </td>
 										<td><input name="auth_voucher" type="text" style="border:1px dashed;" size="22"></td>
 									</tr>
 
@@ -303,8 +272,8 @@ LogoutWin = window.open('', 'Logout', 'toolbar=0,scrollbars=0,location=0,statusb
 if (LogoutWin) {
 	LogoutWin.document.write('<html>');
 	LogoutWin.document.write('<head><title>{$translated_text3}</title></head>') ;
-	LogoutWin.document.write('<body bgcolor="#435370">');
-	LogoutWin.document.write('<div align="center" style="color: #ffffff; font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; font-size: 11px;">') ;
+	LogoutWin.document.write('<body style="background-color:#435370">');
+	LogoutWin.document.write('<div class="text-center" style="color: #ffffff; font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; font-size: 11px;">') ;
 	LogoutWin.document.write('<b>{$translated_text4}</b><p />');
 	LogoutWin.document.write('<form method="POST" action="<?=\$logouturl;?>">');
 	LogoutWin.document.write('<input name="logout_id" type="hidden" value="<?=\$sessionid;?>" />');
@@ -1489,7 +1458,7 @@ function captiveportal_opendb() {
 			if (!is_numericint($cpzoneid)) {
 				if (is_array($config['captiveportal'])) {
 					foreach ($config['captiveportal'] as $cpkey => $cp) {
-						if ($cpzone == $cp['zone']) {
+						if ($cpzone == $cpkey) {
 							$cpzoneid = $cp['zoneid'];
 						}
 					}
@@ -1956,8 +1925,8 @@ function portal_reply_page($redirurl, $type = null, $message = null, $clientmac 
 	/* substitute other variables */
 	$ourhostname = portal_hostname_from_client_ip($clientip);
 	$protocol = (isset($cpcfg['httpslogin'])) ? 'https://' : 'http://';
-	$htmltext = str_replace("\$PORTAL_ACTION\$", "{$protocol}{$ourhostname}/", $htmltext);
-	$htmltext = str_replace("#PORTAL_ACTION#", "{$protocol}{$ourhostname}/", $htmltext);
+	$htmltext = str_replace("\$PORTAL_ACTION\$", "{$protocol}{$ourhostname}/index.php?zone={$cpzone}", $htmltext);
+	$htmltext = str_replace("#PORTAL_ACTION#", "{$protocol}{$ourhostname}/index.php?zone={$cpzone}", $htmltext);
 
 	$htmltext = str_replace("\$PORTAL_ZONE\$", htmlspecialchars($cpzone), $htmltext);
 	$htmltext = str_replace("\$PORTAL_REDIRURL\$", htmlspecialchars($redirurl), $htmltext);
@@ -2086,7 +2055,7 @@ function portal_allow($clientip, $clientmac, $username, $password = null, $attri
 
 	/* read in client database */
 	$query = "WHERE ip = '{$clientip}'";
-	$tmpusername = strtolower($username);
+	$tmpusername = SQLite3::escapeString(strtolower($username));
 	if (isset($config['captiveportal'][$cpzone]['noconcurrentlogins'])) {
 		$query .= " OR (username != 'unauthenticated' AND lower(username) = '{$tmpusername}')";
 	}
@@ -2289,7 +2258,7 @@ function portal_allow($clientip, $clientmac, $username, $password = null, $attri
 			$message = 0;
 		}
 
-		include("{$g['varetc_path']}/captiveportal-{$cpzone}-logout.html");
+		include_once("{$g['varetc_path']}/captiveportal-{$cpzone}-logout.html");
 
 	} else {
 		portal_reply_page($my_redirurl, "redir", "Just redirect the user.");

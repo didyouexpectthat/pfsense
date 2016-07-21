@@ -1,57 +1,23 @@
 <?php
 /*
-	system_authservers.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
- *	Copyright (c)  2008 Shrew Soft Inc.
+ * system_authservers.php
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * Copyright (c) 2008 Shrew Soft Inc
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -61,12 +27,78 @@
 ##|*MATCH=system_authservers.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once("auth.inc");
+
+// Have we been called to populate the "Select a container" modal?
+if ($_REQUEST['ajax']) {
+
+	$ous = array();
+	$authcfg = array();
+
+	$authcfg['ldap_port'] = $_REQUEST['port'];
+	$authcfg['ldap_basedn'] = $_REQUEST['basedn'];
+	$authcfg['host'] = $_REQUEST['host'];
+	$authcfg['ldap_scope'] = $_REQUEST['scope'];
+	$authcfg['ldap_binddn'] = $_REQUEST['binddn'];
+	$authcfg['ldap_bindpw'] = $_REQUEST['bindpw'];
+	$authcfg['ldap_urltype'] = $_REQUEST['urltype'];
+	$authcfg['ldap_protver'] = $_REQUEST['proto'];
+	$authcfg['ldap_authcn'] = explode(";", $_REQUEST['authcn']);
+	$authcfg['ldap_caref'] = $_REQUEST['cert'];
+
+	$ous = ldap_get_user_ous(true, $authcfg);
+
+	if (empty($ous)) {
+		print('<span class="text-danger">Could not connect to the LDAP server. Please check the LDAP configuration.</span>');
+	} else {
+		$modal = new Modal("Select LDAP containers for authentication", "containers", true);
+		$group = new Form_MultiCheckboxGroup('Containers');
+
+		if (is_array($ous)) {
+			$idx = 0;
+
+			foreach ($ous as $ou) {
+				$group->add(new Form_MultiCheckbox(
+					'ou' . $idx,
+					'',
+					$ou,
+					in_array($ou, $authcfg['ldap_authcn']),
+					$ou
+				));
+
+				$idx++;
+			}
+		}
+
+		$modal->add($group);
+
+		// Create a "Save button"
+
+		$btnsv = new Form_Button(
+			'svcontbtn',
+			'Save',
+			null,
+			'fa-save'
+		);
+
+		$btnsv->removeClass("btn-default)")->addClass("btn-primary");
+
+		$modal->addInput(new Form_StaticText(
+			'',
+			$btnsv
+		));
+
+		print($modal);
+	}
+
+	exit;
+}
 
 if (is_numericint($_GET['id'])) {
 	$id = $_GET['id'];
 }
+
 if (isset($_POST['id']) && is_numericint($_POST['id'])) {
 	$id = $_POST['id'];
 }
@@ -257,12 +289,6 @@ if ($_POST) {
 		}
 	}
 
-	/* if this is an AJAX caller then handle via JSON */
-	if (isAjax() && is_array($input_errors)) {
-		input_errors2Ajax($input_errors);
-		exit;
-	}
-
 	if (!$input_errors) {
 		$server = array();
 		$server['refid'] = uniqid();
@@ -403,7 +429,7 @@ if (!($act == "new" || $act == "edit" || $input_errors)) {
 	<div class="panel-heading"><h2 class="panel-title"><?=gettext('Authentication Servers')?></h2></div>
 	<div class="panel-body">
 		<div class="table-responsive">
-			<table class="table table-striped table-hover table-condensed sortable-theme-bootstrap" data-sortable>
+			<table class="table table-striped table-hover table-condensed sortable-theme-bootstrap table-rowdblclickedit" data-sortable>
 				<thead>
 					<tr>
 						<th><?=gettext("Server Name")?></th>
@@ -566,7 +592,7 @@ $group->add(new Form_Input(
 	'text',
 	$pconfig['ldap_authcn']
 ))->setHelp('Note: Semi-Colon separated. This will be prepended to the search '.
-	'base dn above or you can specify full container path containing a dc= '.
+	'base dn above or the full container path can be specified containing a dc= '.
 	'component.<br/>Example: CN=Users;DC=example,DC=com or OU=Staff;OU=Freelancers');
 
 $group->add(new Form_Button(
@@ -574,7 +600,7 @@ $group->add(new Form_Button(
 	'Select a container',
 	null,
 	'fa-search'
-))->addClass('btn-info');
+))->setAttribute('type','button')->addClass('btn-info');
 
 $section->add($group);
 
@@ -739,7 +765,7 @@ $section->addInput(new Form_Input(
 	$pconfig['radius_timeout']
 ))->setHelp('This value controls how long, in seconds, that the RADIUS '.
 	'server may take to respond to an authentication request. If left blank, the '.
-	'default value is 5 seconds. NOTE: If you are using an interactive two-factor '.
+	'default value is 5 seconds. NOTE: If using an interactive two-factor '.
 	'authentication system, increase this timeout to account for how long it will '.
 	'take the user to receive and enter a token.');
 
@@ -754,11 +780,19 @@ if (isset($id) && $a_server[$id])
 }
 
 $form->add($section);
+
+// Create a largely empty modal to show the available containers. We will populate it via AJAX later
+$modal = new Modal("LDAP containers", "containers", true);
+
+$form->add($modal);
+
 print $form;
 ?>
 <script type="text/javascript">
 //<![CDATA[
-events.push(function(){
+events.push(function() {
+
+	// Create an AJAX request (to this page) to get the container list and controls
 	function select_clicked() {
 		if (document.getElementById("ldap_port").value == '' ||
 			document.getElementById("ldap_host").value == '' ||
@@ -776,26 +810,73 @@ events.push(function(){
 				return;
 			}
 		}
-		var url = 'system_usermanager_settings_ldapacpicker.php?';
-		url += 'port=' + document.getElementById("ldap_port").value;
-		url += '&host=' + document.getElementById("ldap_host").value;
-		url += '&scope=' + document.getElementById("ldap_scope").value;
-		url += '&basedn=' + document.getElementById("ldap_basedn").value;
-		url += '&binddn=' + document.getElementById("ldap_binddn").value;
-		url += '&bindpw=' + document.getElementById("ldap_bindpw").value;
-		url += '&urltype=' + document.getElementById("ldap_urltype").value;
-		url += '&proto=' + document.getElementById("ldap_protver").value;
-		url += '&authcn=' + document.getElementById("ldapauthcontainers").value;
-		<?php if (count($a_ca) > 0): ?>
-			url += '&cert=' + document.getElementById("ldap_caref").value;
-		<?php else: ?>
-			url += '&cert=';
-		<?php endif; ?>
 
-		var oWin = window.open(url, "pfSensePop", "width=620,height=400,top=150,left=150");
-		if (oWin == null || typeof(oWin) == "undefined") {
-			alert("<?=gettext('Popup blocker detected.	Action aborted.');?>");
-		}
+		var ajaxRequest;
+		var authserver = $('#authmode').val();
+		var cert;
+
+<?php if (count($a_ca) > 0): ?>
+			cert = $('#ldap_caref').val();
+<?php else: ?>
+			cert = '';
+<?php endif; ?>
+/*
+		$('#containers').modal('show');
+		$('#serverlist').parent('div').prev('label').remove();
+		$('#serverlist').parent('div').removeClass("col-sm-10");
+		$('#serverlist').parent('div').addClass("col-sm-12");
+*/
+		ajaxRequest = $.ajax(
+			{
+				url: "/system_authservers.php",
+				type: "post",
+				data: {
+					ajax: 	"ajax",
+					port: 	$('#ldap_port').val(),
+					host: 	$('#ldap_host').val(),
+					scope: 	$('#ldap_scope').val(),
+					basedn: $('#ldap_basedn').val(),
+					binddn: $('#ldap_binddn').val(),
+					bindpw: $('#ldap_bindpw').val(),
+					urltype:$('#ldap_urltype').val(),
+					proto:  $('#ldap_protver').val(),
+					authcn: $('#ldapauthcontainers').val(),
+					cert:   cert
+				}
+			}
+		);
+
+		// Deal with the results of the above ajax call
+		ajaxRequest.done(function (response, textStatus, jqXHR) {
+			$('#containers').replaceWith(response);
+
+			$('#containers').modal('show');
+
+			// The button handler needs to be here because until the modal has been populated
+			// the controls we need to attach handlers to do not exist
+			$('#svcontbtn').prop("type", "button");
+			$('#svcontbtn').removeAttr("href");
+
+			$('#svcontbtn').click(function () {
+				var ous = $('[id^=ou]').length;
+				var i;
+
+				$('#ldapauthcontainers').val("");
+
+				for (i = 0; i < ous; i++) {
+					if ($('#ou' + i).prop("checked")) {
+						if ($('#ldapauthcontainers').val() != "") {
+							$('#ldapauthcontainers').val($('#ldapauthcontainers').val() +";");
+						}
+
+						$('#ldapauthcontainers').val($('#ldapauthcontainers').val() + $('#ou' + i).val());
+					}
+				}
+
+				$('#containers').modal('hide');
+			});
+		});
+
 	}
 
 	function set_ldap_port() {
@@ -838,7 +919,6 @@ events.push(function(){
 <?php endif; ?>
 
 	hideClass('ldapanon', $('#ldap_anon').prop('checked'));
-	$("#Select").prop('type','button');
 	hideClass('extended', !$('#ldap_extended_enabled').prop('checked'));
 
 	if($('#ldap_port').val() == "")

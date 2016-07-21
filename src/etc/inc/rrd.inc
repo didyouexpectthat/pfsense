@@ -1,75 +1,26 @@
 <?php
 /*
-	rrd.inc
-
-	part of pfSense (https://www.pfsense.org)
-	Copyright (C) 2010 Seth Mos <seth.mos@dds.nl>
-	Copyright (c) 2010-2016 Electric Sheep Fencing, LLC.
-	All rights reserved.
-
-	Redistribution and use in source and binary forms, with or without
-	modification, are permitted provided that the following conditions are met:
-
-	1. Redistributions of source code must retain the above copyright notice,
-	   this list of conditions and the following disclaimer.
-
-	2. Redistributions in binary form must reproduce the above copyright
-	   notice, this list of conditions and the following disclaimer in
-	   the documentation and/or other materials provided with the
-	   distribution.
-
-	3. All advertising materials mentioning features or use of this software
-	   must display the following acknowledgment:
-	   "This product includes software developed by the pfSense Project
-	   for use in the pfSense® software distribution. (http://www.pfsense.org/).
-
-	4. The names "pfSense" and "pfSense Project" must not be used to
-	   endorse or promote products derived from this software without
-	   prior written permission. For written permission, please contact
-	   coreteam@pfsense.org.
-
-	5. Products derived from this software may not be called "pfSense"
-	   nor may "pfSense" appear in their names without prior written
-	   permission of the Electric Sheep Fencing, LLC.
-
-	6. Redistributions of any form whatsoever must retain the following
-	   acknowledgment:
-
-	"This product includes software developed by the pfSense Project
-	for use in the pfSense software distribution (http://www.pfsense.org/).
-
-	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
-	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
-	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
-	OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ * rrd.inc
+ *
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2010 Seth Mos <seth.mos@dds.nl>
+ * Copyright (c) 2010-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /* include all configuration functions */
-
-global $rrd_graph_list;
-$rrd_graph_list = array("eighthour", "day", "week", "month", "quarter", "year", "fouryear");
-global $rrd_period_list;
-$rrd_period_list = array("absolute" => gettext("Absolute Timespans"), "current" => gettext("Current Period"), "previous" => gettext("Previous Period"));
-global $rrd_graph_length_list;
-$rrd_graph_length_list = array(
-	"eighthour" => 28800,
-	"day" => 86400,
-	"week" => 604800,
-	"month" => 2678400,
-	"quarter" => 7948800,
-	"year" => 31622400,
-	"fouryear" => 126230400);
-global $rrd_style_list;
-$rrd_style_list = array('inverse' => gettext('Inverse'),
-		'absolute' => gettext('Absolute'));
 
 function dump_rrd_to_xml($rrddatabase, $xmldumpfile) {
 	$rrdtool = "/usr/bin/nice -n20 /usr/local/bin/rrdtool";
@@ -979,7 +930,7 @@ function enable_rrd_graphing() {
 
 					/* enter UNKNOWN values in the RRD so it knows we rebooted. */
 					if (platform_booting()) {
-						mwexec("$rrdtool update $rrddbpath$dhcpif$dhcpd N:U:U:U:U:U:U:U:U");
+						mwexec("$rrdtool update $rrddbpath$dhcpif$dhcpd N:U:U:U");
 					}
 
 					$rrdupdatesh .= "\n";
@@ -1017,13 +968,13 @@ for sock in {$g['varrun_path']}/dpinger_*.sock; do
 	if echo "\$delay" | grep -Eqv '^[0-9]+\$'; then
 		delay="U"
 	else
-		# Convert delay to millisecond
+		# Convert delay from microseconds to seconds
 		delay=\$(echo "scale=7; \$delay / 1000 / 1000" | /usr/bin/bc)
 	fi
 	if echo "\$stddev" | grep -Eqv '^[0-9]+\$'; then
 		stddev="U"
 	else
-		# Convert stddev to millisecond
+		# Convert stddev from microseconds to seconds
 		stddev=\$(echo "scale=7; \$stddev / 1000 / 1000" | /usr/bin/bc)
 	fi
 
@@ -1070,7 +1021,9 @@ EOD;
 
 	$databases = glob("{$rrddbpath}/*.rrd");
 	foreach ($databases as $database) {
-		chown($database, "nobody");
+		if (file_exists($database)) {
+			chown($database, "nobody");
+		}
 	}
 
 	if (platform_booting()) {

@@ -1,53 +1,22 @@
 <?php
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+/*
+ * head.inc
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 require_once("globals.inc");
@@ -60,21 +29,21 @@ header('Content-Type: text/html; charset=utf-8');
 
 $pagetitle = gentitle($pgtitle);
 
-if (isset($config['system']['webgui']['pagenamefirst'])) {
+if ($user_settings['webgui']['pagenamefirst']) {
 	$tabtitle = $pagetitle . " - " . htmlspecialchars($config['system']['hostname'] . "." . $config['system']['domain']);
 } else {
 	$tabtitle = htmlspecialchars($config['system']['hostname'] . "." . $config['system']['domain']) . " - " . $pagetitle;
 }
 
-$cssfile = "/bootstrap/css/pfSense.css";
+$cssfile = "/css/pfSense.css";
 
-if (isset($config['system']['webgui']['webguicss'])) {
-	if (file_exists("/usr/local/www/bootstrap/css/" . $config['system']['webgui']['webguicss'])) {
-		$cssfile = "/bootstrap/css/" . $config['system']['webgui']['webguicss'];
+if (isset($user_settings['webgui']['webguicss'])) {
+	if (file_exists("/usr/local/www/css/" . $user_settings['webgui']['webguicss'])) {
+		$cssfile = "/css/" . $user_settings['webgui']['webguicss'];
 	}
 }
 
-// set default colmns to two if unset
+// set default columns to two if unset
 if (!isset($config['system']['webgui']['dashboardcolumns'])) {
 	$config['system']['webgui']['dashboardcolumns'] = 2;
 }
@@ -84,9 +53,9 @@ if (!isset($config['system']['webgui']['dashboardcolumns'])) {
 <html lang="en">
 <head>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="/vendor/font-awesome/css/font-awesome.min.css">
+	<link rel="stylesheet" href="/vendor/sortable/sortable-theme-bootstrap.css">
 	<link rel="stylesheet" href="<?=$cssfile?>" />
-	<link rel="stylesheet" href="/font-awesome/css/font-awesome.min.css">
-	<link rel="stylesheet" href="/sortable/sortable-theme-bootstrap.css">
 	<title><?=$tabtitle?></title>
 	<script type="text/javascript">
 	//<![CDATA[
@@ -253,6 +222,10 @@ if (!isAllowedPage("system_usermanager.php*")) {
 	$system_menu[] = array(gettext("User Manager"), "/system_usermanager_passwordmg.php");
 } else {
 	$system_menu[] = array(gettext("User Manager"), "/system_usermanager.php");
+}
+
+if ($user_settings['customsettings'] && isAllowedPage("system_user_settings.php*")) {
+	$system_menu[] = array(gettext("User Settings"), "/system_user_settings.php");
 }
 
 $system_menu = msort(array_merge($system_menu, return_ext_menu("System")), 0);
@@ -424,11 +397,11 @@ if (!$g['disablehelpmenu']) {
 
 $menuclass = "static";
 
-if (isset($config['system']['webgui']['webguifixedmenu'])) {
+if ($user_settings['webgui']['webguifixedmenu'] == "fixed") {
 	$menuclass = "fixed";
 }
 
-$numColumns = $config['system']['webgui']['dashboardcolumns'];
+$numColumns = $user_settings['webgui']['dashboardcolumns'];
 
 if (($pagename === "index.php") && ($numColumns > 2)) {
 	$columnsContainer = 'style="max-width: ' . 585*$numColumns . 'px;width: 100%"';
@@ -444,20 +417,30 @@ if (($pagename === "index.php") && ($numColumns > 2)) {
 				<span class="icon-bar"></span>
 				<span class="icon-bar"></span>
 			</button>
-			<a class="navbar-brand" href="/"><img src="/logo.png" alt="pfSense" /></a>
+			<a class="navbar-brand" href="/"><img src="/logo.png" alt="pfSense" title="<?=$config['system']['hostname'] . '.' . $config['system']['domain']?>"/></a>
 		</div>
 		<div class="collapse navbar-collapse" id="pf-navbar">
 			<ul class="nav navbar-nav">
-			<?php foreach ([
-					['name' => 'System',	  'menu' => $system_menu,	   'href' => null],
-					['name' => 'Interfaces',  'menu' => $interfaces_menu,  'href' => null],
-					['name' => 'Firewall',	  'menu' => $firewall_menu,	   'href' => null],
-					['name' => 'Services',	  'menu' => $services_menu,	   'href' => null],
-					['name' => 'VPN',		  'menu' => $vpn_menu,		   'href' => null],
-					['name' => 'Status',	  'menu' => $status_menu,	   'href' => null],
-					['name' => 'Diagnostics', 'menu' => $diagnostics_menu, 'href' => null],
-					['name' => 'Gold',		  'menu' => $gold_menu,		   'href' => '_blank'],
-					['name' => 'Help',		  'menu' => $help_menu,		   'href' => '_blank']
+			<?php
+                if ($user_settings['webgui']['webguihostnamemenu'] == 'hostonly') {
+                    $help_menu_title = htmlspecialchars($config['system']['hostname']);
+                }
+                elseif ($user_settings['webgui']['webguihostnamemenu'] == 'fqdn') {
+                    $help_menu_title = htmlspecialchars($config['system']['hostname'] . "." . $config['system']['domain']);
+                }
+                else {
+                    $help_menu_title = 'Help';
+                }
+                foreach ([
+					['name' => 'System',	     'menu' => $system_menu,	  'href' => null],
+					['name' => 'Interfaces',     'menu' => $interfaces_menu,  'href' => null],
+					['name' => 'Firewall',	     'menu' => $firewall_menu,	  'href' => null],
+					['name' => 'Services',	     'menu' => $services_menu,	  'href' => null],
+					['name' => 'VPN',		     'menu' => $vpn_menu,		  'href' => null],
+					['name' => 'Status',	     'menu' => $status_menu,	  'href' => null],
+					['name' => 'Diagnostics',    'menu' => $diagnostics_menu, 'href' => null],
+					['name' => 'Gold',		     'menu' => $gold_menu,		  'href' => '_blank'],
+                    ['name' => $help_menu_title, 'menu' => $help_menu,		  'href' => '_blank']
 				] as $item):
 					if ($item['name'] == 'Help' && $g['disablehelpmenu']) {
 						continue;
@@ -507,18 +490,18 @@ if (($pagename === "index.php") && ($numColumns > 2)) {
 ?>
 		<ul class="context-links">
 
-	<?php if ($dashboard_available_widgets_hidden): ?>
+	<?php if (isset($widgets)): ?>
 		<li>
-			<a onclick="$('#widget-available').toggle(360);" title="<?=gettext("Available widgets")?>">
-				<i class="fa fa-plus icon-pointer"></i>
+			<a href="#" title="<?=gettext("Save dashboard layout")?>" id="btnstore" class="invisible">
+				<i class="fa fa-save icon-pointer"></i>
 			</a>
 		</li>
 	<?php endif?>
 
-	<?php if (isset($widgets)): ?>
+	<?php if ($dashboard_available_widgets_hidden): ?>
 		<li>
-			<a href="#" title="<?=gettext("Save dashboard layout")?>" id="btnstore">
-				<i class="fa fa-save icon-pointer"></i>
+			<a onclick="$('#widget-available').toggle(360);" title="<?=gettext("Available widgets")?>">
+				<i class="fa fa-plus icon-pointer"></i>
 			</a>
 		</li>
 	<?php endif?>
@@ -531,7 +514,7 @@ if (($pagename === "index.php") && ($numColumns > 2)) {
 		</li>
 	<?php endif ?>
 
-	<?php if ($system_logs_manage_log_form_hidden): 
+	<?php if ($system_logs_manage_log_form_hidden):
 			/* If the user does not have access to status logs settings page, then exclude the manage log panel icon from the title bar. */
 			if (isAllowedPage("status_logs_settings.php")) {
 	?>
@@ -575,7 +558,7 @@ if (!$hide_service_status && !empty($shortcuts[$shortcut_section]['service']) &&
 	}
 	if (!empty($ssvc)) {
 		// echo '<li>'. get_service_status_icon($ssvc, false). '</li>'; TODO: Add missing function
-		echo '<li>'. get_service_control_GET_links($ssvc, false). '</li>';
+		echo '<li>'. get_service_control_links($ssvc, false). '</li>';
 	}
 }
 
@@ -665,10 +648,10 @@ if (are_notices_pending()):?>
 					<li>
 						<b>
 <?php if (!empty($notice['url'])):?>
-							<a href="<?=$notice['url']?>"><?=$notice['id']?></a> -
+							<a href="<?=htmlspecialchars($notice['url'])?>"><?=htmlspecialchars($notice['id'])?></a> -
 <?php endif;?>
 						</b>
-						<?=$notice['notice']?>
+						<?=htmlspecialchars($notice['notice'])?>
 						<i>@ <?=date('Y-m-d H:i:s', $notice['time'])?></i>
 					</li>
 <?php	endforeach;?>
@@ -677,8 +660,8 @@ if (are_notices_pending()):?>
 			</div>
 
 			<div class="modal-footer">
-				<button type="button" class="btn btn-info" data-dismiss="modal"><i class="fa fa-undo icon-embed-btn"></i><?=gettext("Close")?></button>
-				<button type="button" id="clearallnotices" class="btn btn-primary"><i class="fa fa-trash icon-embed-btn"></i><?=gettext("Mark All as Read")?></button>
+				<button type="button" class="btn btn-info" data-dismiss="modal"><i class="fa fa-times icon-embed-btn"></i><?=gettext("Close")?></button>
+				<button type="button" id="clearallnotices" class="btn btn-primary"><i class="fa fa-trash-o icon-embed-btn"></i><?=gettext("Mark All as Read")?></button>
 			</div>
 		</div>
 	</div>

@@ -1,56 +1,22 @@
 <?php
 /*
-	traffic_shaper_wizard_dedicated.inc
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * traffic_shaper_wizard_dedicated.inc
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 function step1_stepbeforeformdisplay() {
@@ -80,7 +46,7 @@ function step1_submitphpaction() {
 	global $stepid, $savemsg;
 
 	if (!isset($_POST['numberofconnections'])) {
-		$savemsg=gettext("You need to specify the number of connections.");
+		$savemsg=gettext("The number of connections must be specified.");
 		$stepid--;
 		return;
 	}
@@ -110,7 +76,7 @@ function step2_stepbeforeformdisplay() {
 	}
 	$numberofconnections = intval($config['ezshaper']['step1']['numberofconnections']);
 	if ($numberofconnections > ($wans < $lans ? $wans : $lans)) {
-		$savemsg=gettext("You have less interfaces than number of connections!");
+		$savemsg=gettext("There are less interfaces than number of connections!");
 		$stepid--;
 		return;
 	}
@@ -304,7 +270,7 @@ function step2_stepsubmitphpaction() {
 	for ($i = 0; $i < $steps; $i++) {
 		for ($j = $i + 1; $j <= $steps; $j++) {
 			if ($_POST["conn{$i}interface"] == $_POST["conn{$j}interface"] || $_POST["conn{$i}interface"] == $_POST["local{$j}interface"]) {
-				$savemsg=gettext("You cannot select the same interface for connections {$i} and {$j}.");
+				$savemsg=gettext("The same interface cannot be selected for connections {$i} and {$j}.");
 				$stepid--;
 				return;
 			}
@@ -322,7 +288,7 @@ function step2_stepsubmitphpaction() {
 				$upbw = $_POST["conn{$i}upload"];
 				$downbw = $_POST["conn{$i}download"];
 				if ($upbw < 1 || $downbw < 1) {
-					$savemsg = gettext("You cannot specify bandwidth smaller than 1!");
+					$savemsg = gettext("The specified bandwidth cannot be less than 1.");
 					$stepid--;
 					return;
 				}
@@ -333,7 +299,7 @@ function step2_stepsubmitphpaction() {
 				}
 			}
 			if ($_POST["local{$i}interface"] == $_POST["conn{$j}interface"] || $_POST["local{$i}interface"] == $_POST["local{$j}interface"]) {
-				$savemsg=gettext("You cannot select the same interface for local and outside.");
+				$savemsg=gettext("The same interface cannot be selected for local and outside.");
 				$stepid--;
 				return;
 			}
@@ -388,7 +354,7 @@ function step3_stepbeforeformdisplay() {
 	$field['name'] = "Provider";
 	$enablefields[] = "Provider";
 	$field['type'] = "select";
-	$field['description'] = "Choose Generic if your provider isn't listed.";
+	$field['description'] = "Choose Generic if the provider isn't listed.";
 	$field['options']['option'] = array();
 	$opts = array();
 	$opts['name'] = "Generic (lowdelay)";
@@ -414,7 +380,7 @@ function step3_stepbeforeformdisplay() {
 	$field['name'] = "upstream_sip_server";
 	$enablefields[] = "upstream_sip_server";
 	$field['type'] = "inputalias";
-	$field['description'] = "(Optional) If this is chosen, the provider field will be overridden. This allows you to provide the IP address of the <strong>remote</strong> PBX or SIP Trunk to prioritize.  <br />NOTE: You can also use a Firewall Alias in this location.";
+	$field['description'] = "(Optional) If this is chosen, the provider field will be overridden. This allows providing the IP address of the <strong>remote</strong> PBX or SIP Trunk to prioritize.  <br />NOTE: A Firewall Alias can also be used in this location.";
 	$field['message'] = "IP Address field is non-blank and doesn't look like an IP address.";
 	$field['bindstofield'] = "ezshaper->step3->address";
 	$voipfields[] = $field;
@@ -528,7 +494,7 @@ function step3_stepsubmitphpaction() {
 			}
 			if ($_POST["conn{$i}uploadspeed"] == "%") {
 				if (intval($_POST["conn{$i}upload"]) > 80) {
-					$savemsg=gettext("You cannot set the VoIP upload bandwidth on connection {$i} higher than 80% of the connection.");
+					$savemsg=gettext("The VoIP upload bandwidth on connection {$i} cannot be set higher than 80% of the connection.");
 					$stepid--;
 					return;
 				}
@@ -538,7 +504,7 @@ function step3_stepsubmitphpaction() {
 				$factor = wizard_get_bandwidthtype_scale($_POST["conn{$i}uploadspeed"]);
 				$input_bw = $factor * floatval($_POST["conn{$i}upload"]);
 				if ((0.8 * $ifbw) < $input_bw) {
-					$savemsg=gettext("You cannot set the VoIP upload bandwidth on connection {$i} higher than 80% of the connection.");
+					$savemsg=gettext("The VoIP upload bandwidth on connection {$i} cannot be set higher than 80% of the connection.");
 					$stepid--;
 					return;
 				}
@@ -553,7 +519,7 @@ function step3_stepsubmitphpaction() {
 			}
 			if ($_POST["local{$i}downloadspeed"] == "%") {
 				if (intval($_POST["local{$i}download"]) > 80) {
-					$savemsg=gettext("You cannot set the VoIP upload bandwidth on connection {$i} higher than 80% of the connection.");
+					$savemsg=gettext("The VoIP download bandwidth on connection {$i} cannot be set higher than 80% of the connection.");
 					$stepid--;
 					return;
 				}
@@ -563,7 +529,7 @@ function step3_stepsubmitphpaction() {
 				$factor = wizard_get_bandwidthtype_scale($_POST["local{$i}downloadspeed"]);
 				$input_bw = $factor * floatval($_POST["local{$i}download"]);
 				if ((0.8 * $ifbw) < $input_bw) {
-					$savemsg=gettext("You cannot set the VoIP download bandwidth on connection {$i} higher than 80% of the connection.");
+					$savemsg=gettext("The VoIP download bandwidth on connection {$i} cannot be set higher than 80% of the connection.");
 					$stepid--;
 					return;
 				}
@@ -593,7 +559,7 @@ function step4_stepsubmitphpaction() {
 
 	if ( $_POST['enable'] ) {
 		if(!$_POST['bandwidth']) {
-			$savemsg="You need to specify a value for bandwidth!";
+			$savemsg="A value for bandwidth must be specified.";
 			$stepid--;
 			return;
 		}
@@ -1089,8 +1055,8 @@ function apply_all_chosen_items() {
 
 			$altq->SetInterface($config['ezshaper']['step2']["local{$i}interface"]);
 			$altq->SetScheduler($config['ezshaper']['step2']["local{$i}downloadscheduler"]);
-			//$altq->SetBandwidth($config['ezshaper']['step2']["conn{$i}download"]);
-			//$altq->SetBwscale($config['ezshaper']['step2']["conn{$i}downloadspeed"]);
+			$altq->SetBandwidth($downbw / 1000);
+			$altq->SetBwscale("Kb");
 			$altq->SetEnabled("on");
 			$altq_list_queues[$altq->GetQname()] =& $altq;
 			array_push($tmppath, $config['ezshaper']['step2']["local{$i}interface"]);
@@ -1178,6 +1144,7 @@ function apply_all_chosen_items() {
 			$remainbw = 100 - $remainbw;
 		}
 
+		$downqbw = $downbw;
 		if (!$p2pcatchall) {
 			if ($sched == "PRIQ")
 				$q =& new priq_queue();
@@ -1206,6 +1173,8 @@ function apply_all_chosen_items() {
 			//echo "qDefault <br />";
 			//var_dump($input_errors);
 			$qtmp->wconfig();
+
+			$downqbw *= 0.8; /* $downqbw - 20% */
 		}
 
 		if ($sched != "PRIQ") {
@@ -1219,16 +1188,16 @@ function apply_all_chosen_items() {
 			$tmpcf['ecn'] = "on";
 			$tmpcf['enabled'] = "on";
 			If ($sched == "CBQ") {
-				$tmpcf['bandwidth'] = floatval($config['ezshaper']['step2']["conn{$i}download"]);
-				$tmpcf['bandwidthtype'] = $config['ezshaper']['step2']["conn{$i}downloadspeed"];
+				$tmpcf['bandwidth'] = $downqbw / 1000;
+				$tmpcf['bandwidthtype'] = "Kb";
 			}
 			else if ($sched == "HFSC") {
 				$tmpcf['upperlimit'] = "on";
-				$tmpcf['upperlimit3'] = floatval($config['ezshaper']['step2']["conn{$i}download"]) . $config['ezshaper']['step2']["conn{$i}downloadspeed"];
+				$tmpcf['upperlimit3'] = ($downqbw / 1000) . "Kb";
 				$tmpcf['linkshare'] = "on";
-				$tmpcf['linkshare3'] = floatval($config['ezshaper']['step2']["conn{$i}download"]) . $config['ezshaper']['step2']["conn{$i}downloadspeed"];
-				$tmpcf['bandwidth'] =  floatval($config['ezshaper']['step2']["conn{$i}download"]);
-				$tmpcf['bandwidthtype'] = $config['ezshaper']['step2']["conn{$i}downloadspeed"];
+				$tmpcf['linkshare3'] = ($downqbw / 1000) . "Kb";
+				$tmpcf['bandwidth'] =  $downqbw / 1000;
+				$tmpcf['bandwidthtype'] = "Kb";
 			}
 			array_push($tmppath, "qInternet");
 			$qtmp =& $altq->add_queue($q, $tmpcf, $tmppath, $input_errors);

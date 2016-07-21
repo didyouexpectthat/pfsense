@@ -1,59 +1,26 @@
 <?php
 /*
-	status_interfaces.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * status_interfaces.php
  *
- *	Some or all of this file is based on the m0n0wall project which is
- *	Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -130,8 +97,8 @@ foreach ($ifdescrs as $ifdescr => $ifname):
 		showDefBtn($ifinfo['pppoelink'], 'PPPoE', $ifinfo['pppoelink'], $ifdescr, $ifinfo['pppoelink'] == "up" ? gettext("Disconnect") : gettext("Connect"));
 		showDefBtn($ifinfo['pptplink'], 'PPTP', $ifinfo['pptplink'], $ifdescr, $ifinfo['pptplink'] == "up" ? gettext("Disconnect") : gettext("Connect"));
 		showDefBtn($ifinfo['l2tplink'], 'L2TP', $ifinfo['l2tplink'], $ifdescr, $ifinfo['l2tplink'] == "up" ? gettext("Disconnect") : gettext("Connect"));
-		showDefBtn($ifinfo['ppplink'], 'L2TP', $ifinfo['ppplink'], $ifdescr, ($ifinfo['ppplink'] == "up" && !$ifinfo['nodevice']) ? gettext("Disconnect") : gettext("Connect"));
-		showDef($ifinfo['ppp_uptime'] || $ifinfo['ppp_uptime_accumulated'], gettext("Uptime ") . $ifinfo['ppp_uptime_accumulated'] ? '(historical)':'', $ifinfo['ppp_uptime'] . $ifinfo['ppp_uptime_accumulated']);
+		showDefBtn($ifinfo['ppplink'], 'PPP', $ifinfo['ppplink'], $ifdescr, ($ifinfo['ppplink'] == "up" && !$ifinfo['nodevice']) ? gettext("Disconnect") : gettext("Connect"));
+		showDef($ifinfo['ppp_uptime'] || $ifinfo['ppp_uptime_accumulated'], gettext("Uptime") . ' ' . ($ifinfo['ppp_uptime_accumulated'] ? '(historical)':''), $ifinfo['ppp_uptime'] . $ifinfo['ppp_uptime_accumulated']);
 		showDef($ifinfo['cell_rssi'], gettext("Cell Signal (RSSI)"), $ifinfo['cell_rssi']);
 		showDef($ifinfo['cell_mode'], gettext("Cell Mode"), $ifinfo['cell_mode']);
 		showDef($ifinfo['cell_simstate'], gettext("Cell SIM State"), $ifinfo['cell_simstate']);
@@ -144,8 +111,8 @@ foreach ($ifdescrs as $ifdescr => $ifname):
 		if ($ifinfo['macaddr']) {
 			$mac=$ifinfo['macaddr'];
 			$mac_hi = strtoupper($mac[0] . $mac[1] . $mac[3] . $mac[4] . $mac[6] . $mac[7]);
-			showDef(isset($mac_man[$mac_hi]), gettext('MAC Address'), $mac . ' - ' . $mac_man[$mac_hi]);
-			}
+			showDef( $ifinfo['macaddr'], gettext('MAC Address'), $mac . (isset($mac_man[$mac_hi]) ? ' - ' . $mac_man[$mac_hi] : ''));
+		}
 
 		if ($ifinfo['status'] != "down") {
 			if ($ifinfo['dhcplink'] != "down" && $ifinfo['pppoelink'] != "down" && $ifinfo['pptplink'] != "down") {
@@ -161,7 +128,7 @@ foreach ($ifdescrs as $ifdescr => $ifname):
 					$dns_servers = get_dns_servers();
 					$dnscnt = 0;
 					foreach ($dns_servers as $dns) {
-						showDef(true, $dnscnt == 0 ? gettext('ISP DNS servers'):'', $dns);
+						showDef(true, $dnscnt == 0 ? gettext('DNS servers'):'', $dns);
 						$dnscnt++;
 					}
 				}
@@ -176,9 +143,12 @@ foreach ($ifdescrs as $ifdescr => $ifname):
 			showDef($ifinfo['bssid'], gettext("BSSID"), $ifinfo['bssid']);
 			showDef($ifinfo['rate'], gettext("Rate"), $ifinfo['rate']);
 			showDef($ifinfo['rssi'], gettext("RSSI"), $ifinfo['rssi']);
-			showDef(true, gettext("In/out packets"), $ifinfo['inpkts'] . '/' . $ifinfo['outpkts']);
-			showDef(true, gettext("In/out packets (pass)"), $ifinfo['inpktspass'] . "/" . $ifinfo['outpktspass']);
-			showDef(true, gettext("In/out packets (block)"), $ifinfo['inpktsblock'] . "/" . $ifinfo['outpktsblock']);
+			showDef(true, gettext("In/out packets"),
+			    $ifinfo['inpkts'] . '/' . $ifinfo['outpkts'] . " (" . format_bytes($ifinfo['inbytes']) . "/" . format_bytes($ifinfo['outbytes']) . ")");
+			showDef(true, gettext("In/out packets (pass)"),
+			    $ifinfo['inpktspass'] . '/' . $ifinfo['outpktspass'] . " (" . format_bytes($ifinfo['inbytespass']) . "/" . format_bytes($ifinfo['outbytespass']) . ")");
+			showDef(true, gettext("In/out packets (block)"),
+			    $ifinfo['inpktsblock'] . '/' . $ifinfo['outpktsblock'] . " (" . format_bytes($ifinfo['inbytesblock']) . "/" . format_bytes($ifinfo['outbytesblock']) . ")");
 			showDef(isset($ifinfo['inerrs']), gettext("In/out errors"), $ifinfo['inerrs'] . "/" . $ifinfo['outerrs']);
 			showDef(isset($ifinfo['collisions']), gettext("Collisions"), $ifinfo['collisions']);
 		} // e-o-if ($ifinfo['status'] != "down")
@@ -214,7 +184,7 @@ foreach ($ifdescrs as $ifdescr => $ifname):
 print_info_box(gettext("Using dial-on-demand will bring the connection up again if any packet ".
 	    "triggers it. To substantiate this point: disconnecting manually ".
 	    "will <strong>not</strong> prevent dial-on-demand from making connections ".
-	    "to the outside! Don't use dial-on-demand if you want to make sure that the line ".
-	    "is kept disconnected."), 'warning', false);
+	    "to the outside! Don't use dial-on-demand if the line ".
+	    "is to be kept disconnected."), 'warning', false);
 include("foot.inc");
 ?>

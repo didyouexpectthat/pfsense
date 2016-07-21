@@ -1,56 +1,22 @@
 <?php
 /*
-	diag_edit.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * diag_arp.php
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -59,11 +25,11 @@
 ##|*DESCR=Allow access to the 'Diagnostics: Edit File' page.
 ##|*MATCH=diag_edit.php*
 ##|*MATCH=browser.php*
-##|*MATCH=filebrowser/browser.php*
+##|*MATCH=vendor/filebrowser/browser.php*
 ##|-PRIV
 
 $pgtitle = array(gettext("Diagnostics"), gettext("Edit File"));
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 
 if ($_POST['action']) {
 	switch ($_POST['action']) {
@@ -128,7 +94,10 @@ if ($_POST['action']) {
 	exit;
 }
 
-require("head.inc");
+require_once("head.inc");
+
+print_callout(gettext("The capabilities offered here can be dangerous. No support is available. Use them at your own risk!"), 'danger', gettext('Advanced Users Only'));
+
 ?>
 <!-- file status box -->
 <div style="display:none; background:#eeeeee;" id="fileStatusBox">
@@ -140,38 +109,38 @@ require("head.inc");
 	<div class="panel-body">
 		<div class="content">
 			<form>
-				<input type="text" class="form-control" id="fbTarget"/>
+				<p><input type="text" class="form-control" id="fbTarget"/></p>
 				<div class="btn-group">
-					<button type="button" class="btn btn-default btn-sm" onclick="loadFile();"	value="<?=gettext('Load')?>">
-						<i class="fa fa-file-text-o"></i>
-						<?=gettext('Load')?>
-					</button>
-					<button type="button" class="btn btn-default btn-sm" id="fbOpen"		value="<?=gettext('Browse')?>">
-						<i class="fa fa-list"></i>
-						<?=gettext('Browse')?>
-					</button>
-					<button type="button" class="btn btn-default btn-sm" onclick="saveFile();"	value="<?=gettext('Save')?>">
-						<i class="fa fa-save"></i>
-						<?=gettext('Save')?>
-					</button>
+					<p>
+						<button type="button" class="btn btn-default btn-sm" onclick="loadFile();"	value="<?=gettext('Load')?>">
+							<i class="fa fa-file-text-o"></i>
+							<?=gettext('Load')?>
+						</button>
+						<button type="button" class="btn btn-default btn-sm" id="fbOpen"		value="<?=gettext('Browse')?>">
+							<i class="fa fa-list"></i>
+							<?=gettext('Browse')?>
+						</button>
+						<button type="button" class="btn btn-default btn-sm" onclick="saveFile();"	value="<?=gettext('Save')?>">
+							<i class="fa fa-save"></i>
+							<?=gettext('Save')?>
+						</button>
+					</p>
 				</div>
-				<span class="pull-right">
-					<button id="btngoto" class="btn btn-default btn-sm"><i class="fa fa-forward"></i><?=gettext("GoTo Line #")?></button> <input type="number" id="gotoline" size="6" />
-				</span>
+				<p class="pull-right">
+					<button id="btngoto" class="btn btn-default btn-sm"><i class="fa fa-forward"></i><?=gettext("GoTo Line #")?></button> <input type="number" id="gotoline" size="6" style="padding: 3px 0px;"/>
+				</p>
 			</form>
 
-			<div id="fbBrowser" style="display:none; border:1px dashed gray; width:98%;"></div>
+			<div id="fbBrowser" style="display:none; border:1px dashed gray; width:98%; padding:10px"></div>
 
-			<div style="background:#eeeeee;" id="fileOutput">
-				<script type="text/javascript">
-				//<![CDATA[
-				window.onload=function() {
-					document.getElementById("fileContent").wrap='off';
-				}
-				//]]>
-				</script>
-				<textarea id="fileContent" name="fileContent" class="form-control" rows="30" cols="20"></textarea>
-			</div>
+			<script type="text/javascript">
+			//<![CDATA[
+			window.onload=function() {
+				document.getElementById("fileContent").wrap='off';
+			}
+			//]]>
+			</script>
+			<textarea id="fileContent" name="fileContent" class="form-control" rows="30" cols="20"></textarea>
 		</div>
 	</div>
 </div>
@@ -430,4 +399,4 @@ var Base64 = {
 
 <?php include("foot.inc");
 
-outputJavaScriptFileInline("filebrowser/browser.js");
+outputJavaScriptFileInline("vendor/filebrowser/browser.js");

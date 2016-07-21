@@ -1,57 +1,23 @@
 <?php
 /*
-	services_ntpd.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
- *	Copyright (c)  2013 Dagorlad
+ * services_ntpd.php
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * Copyright (c) 2013 Dagorlad
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -62,7 +28,7 @@
 ##|-PRIV
 
 define('NUMTIMESERVERS', 10);		// The maximum number of configurable time servers
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once('rrd.inc');
 require_once("shaper.inc");
 
@@ -169,8 +135,8 @@ if ($_POST) {
 			enable_rrd_graphing();
 		}
 
-		if (!empty($_POST['leaptxt'])) {
-			$config['ntpd']['leapsec'] = base64_encode($_POST['leaptxt']);
+		if (!empty($_POST['leaptext'])) {
+			$config['ntpd']['leapsec'] = base64_encode($_POST['leaptext']);
 		} elseif (isset($config['ntpd']['leapsec'])) {
 			unset($config['ntpd']['leapsec']);
 		}
@@ -234,6 +200,7 @@ $tab_array[] = array(gettext("PPS"), false, "services_ntpd_pps.php");
 display_top_tabs($tab_array);
 
 $form = new Form;
+$form->setMultipartEncoding();	// Allow file uploads
 
 $section = new Form_Section('NTP Server Configuration');
 
@@ -299,7 +266,7 @@ $section->addInput(new Form_StaticText(
 	$btnaddrow
 ))->setHelp('For best results three to five servers should be configured here.' . '<br />' .
 			'The prefer option indicates that NTP should favor the use of this server more than all others.' . '<br />' .
-			'The noselect option indicates that NTP should not use this server for time, but stats for this server will be collected and displayed.');
+			'The no select option indicates that NTP should not use this server for time, but stats for this server will be collected and displayed.');
 
 $section->addInput(new Form_Input(
 	'ntporphan',
@@ -308,7 +275,7 @@ $section->addInput(new Form_Input(
 	$pconfig['ntporphan']
 ))->setHelp('Orphan mode allows the system clock to be used when no other clocks are available. ' .
 			'The number here specifies the stratum reported during orphan mode and should normally be set to a number high enough ' .
-			'to insure that any other servers available to clients are preferred over this server. (default: 12).');
+			'to insure that any other servers available to clients are preferred over this server (default: 12).');
 
 $section->addInput(new Form_Checkbox(
 	'statsgraph',
@@ -330,21 +297,21 @@ $section->addInput(new Form_Checkbox(
 	'Log system messages (default: disabled).',
 	$pconfig['logsys']
 ))->setHelp('These options enable additional messages from NTP to be written to the System Log ' .
-			'<a href="status_logs.php?logfile=ntpd">' . 'Status > System Logs > NTP' . '</a>');
+			'<a href="status_logs.php?logfile=ntpd">' . 'Status > System Logs > NTP' . '</a>.');
 
 // Statistics logging section
-$btnadvstats = new Form_Button(
+$btnadv = new Form_Button(
 	'btnadvstats',
-	'Advanced',
+	'Display Advanced',
 	null,
 	'fa-cog'
 );
 
-$btnadvstats->addClass('btn-info btn-sm');
+$btnadv->setAttribute('type','button')->addClass('btn-info btn-sm');
 
 $section->addInput(new Form_StaticText(
 	'Statistics Logging',
-	$btnadvstats
+	$btnadv
 ))->setHelp('Warning: These options will create persistent daily log files in /var/log/ntp.');
 
 $section->addInput(new Form_Checkbox(
@@ -369,26 +336,26 @@ $section->addInput(new Form_Checkbox(
 ));
 
 // Leap seconds section
-$btnleap = new Form_Button(
-	'btnleap',
-	'Advanced',
+$btnadv = new Form_Button(
+	'btnadvleap',
+	'Display Advanced',
 	null,
 	'fa-cog'
 );
 
-$btnleap->addClass('btn-info btn-sm');
+$btnadv->setAttribute('type','button')->addClass('btn-info btn-sm');
 
 $section->addInput(new Form_StaticText(
 	'Leap seconds',
-	$btnleap
-))->setHelp('A leap second file allows NTP to advertize an upcoming leap second addition or subtraction. ' .
+	$btnadv
+))->setHelp('A leap second file allows NTP to advertise an upcoming leap second addition or subtraction. ' .
 			'Normally this is only useful if this server is a stratum 1 time server. ');
 
 $section->addInput(new Form_Textarea(
 	'leaptext',
 	null,
 	base64_decode(chunk_split($pconfig['leapsec']))
-))->setHelp('Enter Leap second configuration as text OR select a file to upload');
+))->setHelp('Enter Leap second configuration as text OR select a file to upload.');
 
 $section->addInput(new Form_Input(
 	'leapfile',
@@ -413,34 +380,82 @@ print($form);
 //<![CDATA[
 events.push(function() {
 
-	// Make the ‘clear’ button a plain button, not a submit button
-	$('#btnadvstats').prop('type','button');
+	// Show advanced stats options ============================================
+	var showadvstats = false;
 
-	// On click, show the controls in the stats section
-	$("#btnadvstats").click(function() {
-		hideCheckbox('clockstats', false);
-		hideCheckbox('loopstats', false);
-		hideCheckbox('peerstats', false);
+	function show_advstats(ispageload) {
+		var text;
+		// On page load decide the initial state based on the data.
+		if (ispageload) {
+<?php
+			if (!$pconfig['clockstats'] && !$pconfig['loopstats'] && !$pconfig['peerstats']) {
+				$showadv = false;
+			} else {
+				$showadv = true;
+			}
+?>
+			showadvstats = <?php if ($showadv) {echo 'true';} else {echo 'false';} ?>;
+		} else {
+			// It was a click, swap the state.
+			showadvstats = !showadvstats;
+		}
+
+		hideCheckbox('clockstats', !showadvstats);
+		hideCheckbox('loopstats', !showadvstats);
+		hideCheckbox('peerstats', !showadvstats);
+
+		if (showadvstats) {
+			text = "<?=gettext('Hide Advanced');?>";
+		} else {
+			text = "<?=gettext('Display Advanced');?>";
+		}
+		$('#btnadvstats').html('<i class="fa fa-cog"></i> ' + text);
+	}
+
+	$('#btnadvstats').click(function(event) {
+		show_advstats();
 	});
 
-	// Make the ‘clear’ button a plain button, not a submit button
-	$('#btnadvrestr').prop('type','button');
+	// Show advanced leap second options ======================================
+	var showadvleap = false;
 
-	// Make the ‘btnleap’ button a plain button, not a submit button
-	$('#btnleap').prop('type','button');
+	function show_advleap(ispageload) {
+		var text;
+		// On page load decide the initial state based on the data.
+		if (ispageload) {
+<?php
+			// Note: leapfile is not a field saved in the config, so no need to test for it here.
+			// leapsec is the encoded text in the config, leaptext is not a pconfig[] key.
+			if (empty($pconfig['leapsec'])) {
+				$showadv = false;
+			} else {
+				$showadv = true;
+			}
+?>
+			showadvleap = <?php if ($showadv) {echo 'true';} else {echo 'false';} ?>;
+		} else {
+			// It was a click, swap the state.
+			showadvleap = !showadvleap;
+		}
 
-	// On click, show the controls in the leap seconds section
-	$("#btnleap").click(function() {
-		hideInput('leaptext', false);
-		hideInput('leapfile', false);
+		hideInput('leaptext', !showadvleap);
+		hideInput('leapfile', !showadvleap);
+
+		if (showadvleap) {
+			text = "<?=gettext('Hide Advanced');?>";
+		} else {
+			text = "<?=gettext('Display Advanced');?>";
+		}
+		$('#btnadvleap').html('<i class="fa fa-cog"></i> ' + text);
+	}
+
+	$('#btnadvleap').click(function(event) {
+		show_advleap();
 	});
 
-	// Set intial states
-	hideCheckbox('clockstats', true);
-	hideCheckbox('loopstats', true);
-	hideCheckbox('peerstats', true);
-	hideInput('leaptext', true);
-	hideInput('leapfile', true);
+	// Set initial states
+	show_advstats(true);
+	show_advleap(true);
 
 	// Suppress "Delete row" button if there are fewer than two rows
 	checkLastRow();

@@ -1,60 +1,27 @@
 <?php
 /*
-	services_dhcpv6.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
- *	Copyright (c)  2010 Seth Mos <seth.mos@dds.nl>
+ * services_dhcpv6.php
  *
- *	Some or all of this file is based on the m0n0wall project which is
- *	Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * Copyright (c) 2010 Seth Mos <seth.mos@dds.nl>
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -64,7 +31,7 @@
 ##|*MATCH=services_dhcpv6.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once("filter.inc");
 
 function dhcpv6_apply_changes($dhcpdv6_enable_changed) {
@@ -326,7 +293,7 @@ if (isset($_POST['apply'])) {
 		}
 		if (($_POST['ddnsdomainkey'] && !$_POST['ddnsdomainkeyname']) ||
 		    ($_POST['ddnsdomainkeyname'] && !$_POST['ddnsdomainkey'])) {
-			$input_errors[] = gettext("You must specify both a valid domain key and key name.");
+			$input_errors[] = gettext("Both a valid domain key and key name must be specified.");
 		}
 		if ($_POST['domainsearchlist']) {
 			$domain_array=preg_split("/[ ;]+/", $_POST['domainsearchlist']);
@@ -388,7 +355,7 @@ if (isset($_POST['apply'])) {
 
 			/* make sure that the DHCP Relay isn't enabled on this interface */
 			if (isset($config['dhcrelay'][$if]['enable'])) {
-				$input_errors[] = sprintf(gettext("You must disable the DHCP relay on the %s interface before enabling the DHCP server."), $iflist[$if]);
+				$input_errors[] = sprintf(gettext("The DHCP relay on the %s interface must be disabled before enabling the DHCP server."), $iflist[$if]);
 			}
 
 
@@ -504,7 +471,7 @@ if ($_GET['act'] == "del") {
 
 $pgtitle = array(gettext("Services"), htmlspecialchars(gettext("DHCPv6 Server & RA")));
 
-if (!empty($if) && !$dhcrelay_enabled && isset($iflist[$if])) {
+if (!empty($if) && isset($iflist[$if])) {
 	$pgtitle[] = $iflist[$if];
 	$pgtitle[] = gettext("DHCPv6 Server");
 }
@@ -522,12 +489,10 @@ if ($savemsg) {
 
 if ($dhcrelay_enabled) {
 	print_info_box(gettext("DHCPv6 Relay is currently enabled. Cannot enable the DHCPv6 Server service while the DHCPv6 Relay is enabled on any interface."), 'danger', false);
-	include("foot.inc");
-	exit;
 }
 
 if (is_subsystem_dirty('staticmaps')) {
-	print_apply_box(gettext('The static mapping configuration has been changed.') . '<br />' . gettext('You must apply the changes in order for them to take effect.'));
+	print_apply_box(gettext('The static mapping configuration has been changed.') . '<br />' . gettext('The changes must be applied for them to take effect.'));
 }
 
 /* active tabs */
@@ -589,6 +554,11 @@ $tab_array = array();
 $tab_array[] = array(gettext("DHCPv6 Server"),		 true,	"services_dhcpv6.php?if={$if}");
 $tab_array[] = array(gettext("Router Advertisements"), false, "services_router_advertisements.php?if={$if}");
 display_top_tabs($tab_array, false, 'nav nav-tabs');
+
+if ($dhcrelay_enabled) {
+	include("foot.inc");
+	exit;
+}
 
 $form = new Form();
 
@@ -696,7 +666,7 @@ $section->addInput(new Form_Select(
 		'63' => '63',
 		'64' => '64'
 		)
-))->setHelp('You can define a Prefix range here for DHCP Prefix Delegation. This allows for assigning networks to subrouters. The start and end of the range must end on boundaries of the prefix delegation size.');
+))->setHelp('A Prefix range can be defined here for DHCP Prefix Delegation. This allows for assigning networks to subrouters. The start and end of the range must end on boundaries of the prefix delegation size.');
 
 $group = new Form_Group('DNS Servers');
 
@@ -715,17 +685,17 @@ $section->add($group);
 
 $section->addInput(new Form_Input(
 	'domain',
-	'Domain Name',
+	'Domain name',
 	'text',
 	$pconfig['domain']
-))->setHelp('The default is to use the domain name of this system as the default domain name provided by DHCP. You may specify an alternate domain name here. ');
+))->setHelp('The default is to use the domain name of this system as the default domain name provided by DHCP. An alternate domain name may be specified here. ');
 
 $section->addInput(new Form_Input(
 	'domainsearchlist',
 	'Domain search list',
 	'text',
 	$pconfig['domainsearchlist']
-))->setHelp('The DHCP server can optionally provide a domain search list. Use the semicolon character as separator');
+))->setHelp('The DHCP server can optionally provide a domain search list. Use the semicolon character as separator.');
 
 $section->addInput(new Form_Input(
 	'deftime',
@@ -752,18 +722,18 @@ $section->addInput(new Form_Checkbox(
 			'By checking this box DHCPv6 lease time will be displayed in local time and set to time zone selected. ' .
 			'This will be used for all DHCPv6 interfaces lease time.');
 
-$btndyndns = new Form_Button(
-	'btndyndns',
-	'Advanced',
+$btnadv = new Form_Button(
+	'btnadvdns',
+	'Display Advanced',
 	null,
 	'fa-cog'
 );
 
-$btndyndns->addClass('btn-info btn-sm');
+$btnadv->setAttribute('type','button')->addClass('btn-info btn-sm');
 
 $section->addInput(new Form_StaticText(
 	'Dynamic DNS',
-	$btndyndns
+	$btnadv
 ));
 
 $section->addInput(new Form_Checkbox(
@@ -820,18 +790,18 @@ $section->addInput(new Form_Checkbox(
 	$pconfig['ddnsreverse']
 ));
 
-$btnntp = new Form_Button(
-	'btnntp',
-	'Advanced',
+$btnadv = new Form_Button(
+	'btnadvntp',
+	'Display Advanced',
 	null,
 	'fa-cog'
 );
 
-$btnntp->addClass('btn-info btn-sm');
+$btnadv->setAttribute('type','button')->addClass('btn-info btn-sm');
 
 $section->addInput(new Form_StaticText(
 	'NTP servers',
-	$btnntp
+	$btnadv
 ));
 
 $group = new Form_Group('NTP Servers');
@@ -856,18 +826,18 @@ $group->addClass('ntpclass');
 
 $section->add($group);
 
-$btnldap = new Form_Button(
-	'btnldap',
-	'Advanced',
+$btnadv = new Form_Button(
+	'btnadvldap',
+	'Display Advanced',
 	null,
 	'fa-cog'
 );
 
-$btnldap->addClass('btn-info btn-sm');
+$btnadv->setAttribute('type','button')->addClass('btn-info btn-sm');
 
 $section->addInput(new Form_StaticText(
 	'LDAP',
-	$btnldap
+	$btnadv
 ));
 
 $section->addInput(new Form_Input(
@@ -877,18 +847,18 @@ $section->addInput(new Form_Input(
 	$pconfig['ldap']
 ));
 
-$btnnetboot = new Form_Button(
-	'btnnetboot',
-	'Advanced',
+$btnadv = new Form_Button(
+	'btnadvnetboot',
+	'Display Advanced',
 	null,
 	'fa-cog'
 );
 
-$btnnetboot->addClass('btn-info btn-sm');
+$btnadv->setAttribute('type','button')->addClass('btn-info btn-sm');
 
 $section->addInput(new Form_StaticText(
 	'Network booting',
-	$btnnetboot
+	$btnadv
 ));
 
 $section->addInput(new Form_Checkbox(
@@ -905,18 +875,18 @@ $section->addInput(new Form_Input(
 	$pconfig['bootfile_url']
 ));
 
-$btnadnl = new Form_Button(
-	'btnadnl',
-	'Advanced',
+$btnadv = new Form_Button(
+	'btnadvopts',
+	'Display Advanced',
 	null,
 	'fa-cog'
 );
 
-$btnadnl->addClass('btn-info btn-sm');
+$btnadv->setAttribute('type','button')->addClass('btn-info btn-sm');
 
 $section->addInput(new Form_StaticText(
 	'Additional BOOTP/DHCP Options',
-	$btnadnl
+	$btnadv
 ));
 
 $form->add($section);
@@ -991,7 +961,7 @@ print($form);
 <?php
 print_info_box(
 	sprintf(
-		gettext('The DNS servers entered in %1$sSystem: General setup%3$s (or the %2$sDNS forwarder%3$s if enabled) will be assigned to clients by the DHCP server.'),
+		gettext('The DNS servers entered in %1$sSystem: General Setup%3$s (or the %2$sDNS forwarder%3$s if enabled) will be assigned to clients by the DHCP server.'),
 		'<a href="system.php">',
 		'<a href="services_dnsmasq.php"/>',
 		'</a>') .
@@ -1064,72 +1034,190 @@ endif;
 //<![CDATA[
 events.push(function() {
 
-	function hideDDNS(hide) {
-		hideCheckbox('ddnsupdate', hide);
-		hideInput('ddnsdomain', hide);
-		hideInput('ddnsdomainprimary', hide);
-		hideInput('ddnsdomainkeyname', hide);
-		hideInput('ddnsdomainkey', hide);
-		hideInput('ddnsclientupdates', hide);
-		hideCheckbox('ddnsreverse', hide);
+	// Show advanced DNS options ======================================================================================
+	var showadvdns = false;
+
+	function show_advdns(ispageload) {
+		var text;
+		// On page load decide the initial state based on the data.
+		if (ispageload) {
+<?php
+			if (!$pconfig['ddnsupdate'] &&
+			    empty($pconfig['ddnsdomain']) &&
+			    empty($pconfig['ddnsdomainprimary']) &&
+			    empty($pconfig['ddnsdomainkeyname']) &&
+			    empty($pconfig['ddnsdomainkey']) &&
+			    (empty($pconfig['ddnsclientupdates']) || ($pconfig['ddnsclientupdates'] == "allow")) &&
+			    !$pconfig['ddnsreverse']) {
+				$showadv = false;
+			} else {
+				$showadv = true;
+			}
+?>
+			showadvdns = <?php if ($showadv) {echo 'true';} else {echo 'false';} ?>;
+		} else {
+			// It was a click, swap the state.
+			showadvdns = !showadvdns;
+		}
+
+		hideCheckbox('ddnsupdate', !showadvdns);
+		hideInput('ddnsdomain', !showadvdns);
+		hideInput('ddnsdomainprimary', !showadvdns);
+		hideInput('ddnsdomainkeyname', !showadvdns);
+		hideInput('ddnsdomainkey', !showadvdns);
+		hideInput('ddnsclientupdates', !showadvdns);
+		hideCheckbox('ddnsreverse', !showadvdns);
+
+		if (showadvdns) {
+			text = "<?=gettext('Hide Advanced');?>";
+		} else {
+			text = "<?=gettext('Display Advanced');?>";
+		}
+		$('#btnadvdns').html('<i class="fa fa-cog"></i> ' + text);
 	}
 
-	// Make the 'Copy My MAC' button a plain button, not a submit button
-	$("#btnmymac").prop('type','button');
-
-	// On click, copy the hidden 'mymac' text to the 'mac' input
-	$("#btnmymac").click(function() {
-		$('#mac').val('<?=$mymac?>');
+	$('#btnadvdns').click(function(event) {
+		show_advdns();
 	});
 
-	// Make the 'tftp' button a plain button, not a submit button
-	$("#btntftp").prop('type','button');
+	// Show advanced NTP options ======================================================================================
+	var showadvntp = false;
 
-	// Show tftp controls
-	$("#btntftp").click(function() {
-		hideInput('tftp', false);
+	function show_advntp(ispageload) {
+		var text;
+		// On page load decide the initial state based on the data.
+		if (ispageload) {
+<?php
+			if (empty($pconfig['ntp1']) && empty($pconfig['ntp2'])) {
+				$showadv = false;
+			} else {
+				$showadv = true;
+			}
+?>
+			showadvntp = <?php if ($showadv) {echo 'true';} else {echo 'false';} ?>;
+		} else {
+			// It was a click, swap the state.
+			showadvntp = !showadvntp;
+		}
+
+		hideInput('ntp1', !showadvntp);
+		hideInput('ntp2', !showadvntp);
+
+		if (showadvntp) {
+			text = "<?=gettext('Hide Advanced');?>";
+		} else {
+			text = "<?=gettext('Display Advanced');?>";
+		}
+		$('#btnadvntp').html('<i class="fa fa-cog"></i> ' + text);
+	}
+
+	$('#btnadvntp').click(function(event) {
+		show_advntp();
 	});
 
-	// Make the 'ntp' button a plain button, not a submit button
-	$("#btnntp").prop('type','button');
+	// Show advanced LDAP options ======================================================================================
+	var showadvldap = false;
 
-	// Show ntp controls
-	$("#btnntp").click(function() {
-		hideClass('ntpclass', false);
+	function show_advldap(ispageload) {
+		var text;
+		// On page load decide the initial state based on the data.
+		if (ispageload) {
+<?php
+			if (empty($pconfig['ldap'])) {
+				$showadv = false;
+			} else {
+				$showadv = true;
+			}
+?>
+			showadvldap = <?php if ($showadv) {echo 'true';} else {echo 'false';} ?>;
+		} else {
+			// It was a click, swap the state.
+			showadvldap = !showadvldap;
+		}
+
+		hideInput('ldap', !showadvldap);
+
+		if (showadvldap) {
+			text = "<?=gettext('Hide Advanced');?>";
+		} else {
+			text = "<?=gettext('Display Advanced');?>";
+		}
+		$('#btnadvldap').html('<i class="fa fa-cog"></i> ' + text);
+	}
+
+	$('#btnadvldap').click(function(event) {
+		show_advldap();
 	});
 
-	// Make the 'ddns' button a plain button, not a submit button
-	$("#btndyndns").prop('type','button');
+	// Show advanced Netboot options ======================================================================================
+	var showadvnetboot = false;
 
-	// Show ddns controls
-	$("#btndyndns").click(function() {
-		hideDDNS(false);
+	function show_advnetboot(ispageload) {
+		var text;
+		// On page load decide the initial state based on the data.
+		if (ispageload) {
+<?php
+			if (!$pconfig['shownetboot'] && empty($pconfig['bootfile_url'])) {
+				$showadv = false;
+			} else {
+				$showadv = true;
+			}
+?>
+			showadvnetboot = <?php if ($showadv) {echo 'true';} else {echo 'false';} ?>;
+		} else {
+			// It was a click, swap the state.
+			showadvnetboot = !showadvnetboot;
+		}
+
+		hideCheckbox('shownetboot', !showadvnetboot);
+		hideInput('bootfile_url', !showadvnetboot);
+
+		if (showadvnetboot) {
+			text = "<?=gettext('Hide Advanced');?>";
+		} else {
+			text = "<?=gettext('Display Advanced');?>";
+		}
+		$('#btnadvnetboot').html('<i class="fa fa-cog"></i> ' + text);
+	}
+
+	$('#btnadvnetboot').click(function(event) {
+		show_advnetboot();
 	});
 
-	// Make the 'ldap' button a plain button, not a submit button
-	$("#btnldap").prop('type','button');
+	// Show advanced additional opts options ===========================================================================
+	var showadvopts = false;
 
-	// Show ldap controls
-	$("#btnldap").click(function() {
-		hideInput('ldap', false);
-	});
+	function show_advopts(ispageload) {
+		var text;
+		// On page load decide the initial state based on the data.
+		if (ispageload) {
+<?php
+			if (empty($pconfig['numberoptions']) ||
+			    (empty($pconfig['numberoptions']['item'][0]['number']) && (empty($pconfig['numberoptions']['item'][0]['value'])))) {
+				$showadv = false;
+			} else {
+				$showadv = true;
+			}
+?>
+			showadvopts = <?php if ($showadv) {echo 'true';} else {echo 'false';} ?>;
+		} else {
+			// It was a click, swap the state.
+			showadvopts = !showadvopts;
+		}
 
-	// Make the 'netboot' button a plain button, not a submit button
-	$("#btnnetboot").prop('type','button');
+		hideClass('adnloptions', !showadvopts);
+		hideInput('addrow', !showadvopts);
 
-	// Show netboot controls
-	$("#btnnetboot").click(function() {
-		hideInput('bootfile_url', false);
-		hideCheckbox('shownetboot', false);
-	});
+		if (showadvopts) {
+			text = "<?=gettext('Hide Advanced');?>";
+		} else {
+			text = "<?=gettext('Display Advanced');?>";
+		}
+		$('#btnadvopts').html('<i class="fa fa-cog"></i> ' + text);
+	}
 
-	// Make the 'additional options' button a plain button, not a submit button
-	$("#btnadnl").prop('type','button');
-
-	// Show additional  controls
-	$("#btnadnl").click(function() {
-		hideClass('adnloptions', false);
-		hideInput('addrow', false);
+	$('#btnadvopts').click(function(event) {
+		show_advopts();
 		checkLastRow();
 	});
 
@@ -1149,12 +1237,11 @@ events.push(function() {
 
 	// On initial load
 	do_toggle();
-	hideDDNS(true);
-	hideClass('ntpclass', true);
-	hideInput('tftp', true);
-	hideInput('ldap', true);
-	hideInput('bootfile_url', true);
-	hideCheckbox('shownetboot', true);
+	show_advdns(true);
+	show_advntp(true);
+	show_advldap(true);
+	show_advnetboot(true);
+	show_advopts(true);
 	if ($('#enable').prop('checked')) {
 		hideClass('adnloptions', <?php echo json_encode($noopts); ?>);
 		hideInput('addrow', <?php echo json_encode($noopts); ?>);

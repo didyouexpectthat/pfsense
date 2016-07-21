@@ -1,63 +1,30 @@
 <?php
 /*
-	diag_command.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * diag_command.php
  *
- *	Exec+ v1.02-000 - Copyright 2001-2003, All rights reserved
- *	Created by technologEase (http://www.technologEase.com)
- *	(modified for m0n0wall by Manuel Kasper <mk@neon1.net>)\
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *	Some or all of this file is based on the m0n0wall project which is
- *	Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * Exec+ v1.02-000 - Copyright 2001-2003, All rights reserved
+ * Created by technologEase (http://www.technologEase.com)
+ * (modified for m0n0wall by Manuel Kasper <mk@neon1.net>)\
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -69,9 +36,9 @@
 
 $allowautocomplete = true;
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 
-if (($_POST['submit'] == "DOWNLOAD") && file_exists($_POST['dlPath'])) {
+if ($_POST['submit'] == "DOWNLOAD" && file_exists($_POST['dlPath'])) {
 	session_cache_limiter('public');
 	$fd = fopen($_POST['dlPath'], "rb");
 	header("Content-Type: application/octet-stream");
@@ -88,10 +55,9 @@ if (($_POST['submit'] == "DOWNLOAD") && file_exists($_POST['dlPath'])) {
 
 	fpassthru($fd);
 	exit;
-} else if (($_POST['submit'] == "UPLOAD") && is_uploaded_file($_FILES['ulfile']['tmp_name'])) {
+} else if ($_POST['submit'] == "UPLOAD" && is_uploaded_file($_FILES['ulfile']['tmp_name'])) {
 	move_uploaded_file($_FILES['ulfile']['tmp_name'], "/tmp/" . $_FILES['ulfile']['name']);
 	$ulmsg = sprintf(gettext('Uploaded file to /tmp/%s.'), htmlentities($_FILES['ulfile']['name']));
-	unset($_POST['txtCommand']);
 }
 
 if ($_POST) {
@@ -221,7 +187,7 @@ if (isBlank($_POST['txtCommand']) && isBlank($_POST['txtPHPCommand']) && isBlank
 	print_callout(gettext("The capabilities offered here can be dangerous. No support is available. Use them at your own risk!"), 'danger', gettext('Advanced Users Only'));
 }
 
-if (!isBlank($_POST['txtCommand'])):?>
+if ($_POST['submit'] == "EXEC" && !isBlank($_POST['txtCommand'])):?>
 	<div class="panel panel-success responsive">
 		<div class="panel-heading"><h2 class="panel-title"><?=sprintf(gettext('Shell Output - %s'), htmlspecialchars($_POST['txtCommand']))?></h2></div>
 		<div class="panel-body">
@@ -250,17 +216,17 @@ if (!isBlank($_POST['txtCommand'])):?>
 				<input type="hidden" name="txtRecallBuffer" value="<?=htmlspecialchars($_POST['txtRecallBuffer']) ?>" />
 
 				<div class="btn-group">
-					<button type="button" class="btn btn-default btn-sm" name="btnRecallPrev" onclick="btnRecall_onClick( this.form, -1 );" title="<?=gettext("Recall Previous Command")?>">
+					<button type="button" class="btn btn-success btn-sm" name="btnRecallPrev" onclick="btnRecall_onClick( this.form, -1 );" title="<?=gettext("Recall Previous Command")?>">
 						<i class="fa fa-angle-double-left"></i>
 					</button>
-					<button type="submit" class="btn btn-warning btn-sm" value="EXEC" title="<?=gettext("Execute the entered command")?>">
-						<i class="fa fa-terminal icon-inverse"></i>
+					<button name="submit" type="submit" class="btn btn-warning btn-sm" value="EXEC" title="<?=gettext("Execute the entered command")?>">
+						<i class="fa fa-bolt"></i>
 						<?=gettext("Execute"); ?>
 					</button>
-					<button type="button" class="btn btn-default btn-sm" name="btnRecallNext" onclick="btnRecall_onClick( this.form,  1 );" title="<?=gettext("Recall Next Command")?>">
+					<button type="button" class="btn btn-success btn-sm" name="btnRecallNext" onclick="btnRecall_onClick( this.form,  1 );" title="<?=gettext("Recall Next Command")?>">
 						<i class="fa fa-angle-double-right"></i>
 					</button>
-					<button type="button" class="btn btn-default btn-sm" onclick="return Reset_onClick( this.form );" title="<?=gettext("Clear command entry")?>">
+					<button style="margin-left: 10px;" type="button" class="btn btn-default btn-sm" onclick="return Reset_onClick( this.form );" title="<?=gettext("Clear command entry")?>">
 						<i class="fa fa-undo"></i>
 						<?=gettext("Clear"); ?>
 					</button>
@@ -304,7 +270,7 @@ if (!isBlank($_POST['txtCommand'])):?>
 <?php
 	// Experimental version. Writes the user's php code to a file and executes it via a new instance of PHP
 	// This is intended to prevent bad code from breaking the GUI
-	if (!isBlank($_POST['txtPHPCommand'])) {
+	if ($_POST['submit'] == "EXECPHP" && !isBlank($_POST['txtPHPCommand'])) {
 		puts("<div class=\"panel panel-success responsive\"><div class=\"panel-heading\"><h2 class=\"panel-title\">PHP Response</h2></div>");
 
 		$tmpname = tempnam("/tmp", "");
@@ -344,8 +310,8 @@ if (!isBlank($_POST['txtCommand'])):?>
 			<div class="content">
 				<textarea id="txtPHPCommand" placeholder="Command" name="txtPHPCommand" rows="9" cols="80"><?=htmlspecialchars($_POST['txtPHPCommand'])?></textarea>
 				<br />
-				<button type="submit" class="btn btn-warning btn-sm" value="<?=gettext("Execute")?>" title="<?=gettext("Execute this PHP Code")?>">
-					<i class="fa fa-terminal icon-inverse"></i>
+				<button name="submit" type="submit" class="btn btn-warning btn-sm" value="EXECPHP" title="<?=gettext("Execute this PHP Code")?>">
+					<i class="fa fa-bolt"></i>
 					<?=gettext("Execute")?>
 				</button>
 				<?=gettext("Example"); ?>: <code>print("Hello World!");</code>

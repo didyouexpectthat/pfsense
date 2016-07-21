@@ -1,59 +1,26 @@
 <?php
 /*
-	services_captiveportal.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * services_captiveportal.php
  *
- *	Some or all of this file is based on the m0n0wall project which is
- *	Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -82,6 +49,7 @@ $cpzone = $_GET['zone'];
 if (isset($_POST['zone'])) {
 	$cpzone = $_POST['zone'];
 }
+$cpzone = strtolower($cpzone);
 
 if (empty($cpzone) || empty($config['captiveportal'][$cpzone])) {
 	header("Location: services_captiveportal_zones.php");
@@ -620,6 +588,14 @@ $section->addInput(new Form_Input(
 			'the client can only log in with valid credentials until the waiting period specified below has expired. Recommended to set ' .
 			'a hard timeout and/or idle timeout when using this for it to be effective.');
 
+$section->addInput(new Form_Input(
+	'freelogins_resettimeout',
+	'Waiting period to restore pass-through credits. (Hours)',
+	'number',
+	$pconfig['freelogins_resettimeout']
+))->setHelp('Clients will have their available pass-through credits restored to the original count after this amount of time since using the first one. ' .
+			'This must be above 0 hours if pass-through credits are enabled.');
+
 $section->addInput(new Form_Checkbox(
 	'freelogins_updatetimeouts',
 	'Reset waiting period',
@@ -640,14 +616,14 @@ $section->addInput(new Form_Input(
 	'Pre-authentication redirect URL',
 	'text',
 	$pconfig['preauthurl']
-))->setHelp('Use this field to set $PORTAL_REDIRURL$ variable which can be accessed using your custom captive portal index.php page or error pages.');
+))->setHelp('Use this field to set $PORTAL_REDIRURL$ variable which can be accessed using the custom captive portal index.php page or error pages.');
 
 $section->addInput(new Form_Input(
 	'redirurl',
 	'After authentication Redirection URL',
 	'text',
 	$pconfig['redirurl']
-))->setHelp('Clients will be redirected to this URL instead of the one they initially tried to access after they\'ve authenticated');
+))->setHelp('Clients will be redirected to this URL instead of the one they initially tried to access after they\'ve authenticated.');
 
 $section->addInput(new Form_Input(
 	'blockedmacsurl',
@@ -679,8 +655,8 @@ $section->addInput(new Form_Checkbox(
 	'Enable Pass-through MAC automatic additions',
 	$pconfig['passthrumacadd']
 ))->setHelp(sprintf('When enabled, a MAC passthrough entry is automatically added after the user has successfully authenticated. Users of that MAC address will ' .
-			'never have to authenticate again. To remove the passthrough MAC entry you either have to log in and remove it manually from the ' .
-			'%s or send a POST from another system.'  .
+			'never have to authenticate again. To remove the passthrough MAC entry either log in and remove it manually from the ' .
+			'%s or send a POST from another system. '  .
 			'If this is enabled, RADIUS MAC authentication cannot be used. Also, the logout window will not be shown.', '<a href="services_captiveportal_mac.php">MAC tab</a>'));
 
 $section->addInput(new Form_Checkbox(
@@ -689,7 +665,7 @@ $section->addInput(new Form_Checkbox(
 	'Enable Pass-through MAC automatic addition with username',
 	$pconfig['passthrumacaddusername']
 ))->setHelp(sprintf('If enabled with the automatically MAC passthrough entry created, the username used during authentication will be saved. ' .
-			'To remove the passthrough MAC entry you either have to log in and remove it manually from the %s or send a POST from another system.',
+			'To remove the passthrough MAC entry either log in and remove it manually from the %s or send a POST from another system.',
 			'<a href="services_captiveportal_mac.php">MAC tab</a>'));
 
 $section->addInput(new Form_Checkbox(
@@ -958,7 +934,7 @@ $section->addClass('Radius');
 
 $section->addInput(new Form_Checkbox(
 	'reauthenticate',
-	'Reathentication',
+	'Reauthentication',
 	'Reauthenticate connected users every minute',
 	$pconfig['reauthenticate']
 ))->setHelp('If reauthentication is enabled, Access-Requests will be sent to the RADIUS server for each user that is logged in every minute. ' .
@@ -1022,7 +998,7 @@ $section->addInput(new Form_Select(
 	'MAC address format',
 	$pconfig['radmac_format'],
 	['default' => 'Default', 'singledash' => gettext('Single dash'), 'ietf' => 'IETF', 'cisco' => 'Cisco', 'unformatted' => gettext('Unformatted')]
-))->setHelp('This option changes the MAC address format used in the whole RADIUS system. Change this if you also need to change the username format for ' .
+))->setHelp('This option changes the MAC address format used in the whole RADIUS system. Change this if the username format also needs to be changed for ' .
 			'RADIUS MAC authentication.' . '<br />' .
 			'Default: 00:11:22:33:44:55' . '<br />' .
 			'Single dash: 001122-334455' . '<br />' .
@@ -1048,7 +1024,7 @@ $section->addInput(new Form_Input(
 	'HTTPS server name',
 	'text',
 	$pconfig['httpsname']
-))->setHelp('This name will be used in the form action for the HTTPS POST and should match the Common Name (CN) in your certificate ' .
+))->setHelp('This name will be used in the form action for the HTTPS POST and should match the Common Name (CN) in the certificate ' .
 			'(otherwise, the client browser will most likely display a security warning). ' .
 			'Make sure captive portal clients can resolve this name in DNS and verify on the client that the IP resolves to the correct interface IP on pfSense.');
 
@@ -1057,7 +1033,7 @@ $section->addInput(new Form_Select(
 	'SSL Certificate',
 	$pconfig['certref'],
 	build_cert_list()
-))->setHelp('If no certificates are defined, you may define one here: ' . '<a href="system_certmanager.php">System &gt; Cert. Manager</a>');
+))->setHelp('If no certificates are defined, one may be defined here: ' . '<a href="system_certmanager.php">System &gt; Cert. Manager</a>');
 
 $section->addInput(new Form_Checkbox(
 	'nohttpsforwards',
@@ -1088,6 +1064,7 @@ $section->addInput(new Form_Input(
 			 &nbsp;&nbsp;&nbsp;&lt;input name=&quot;auth_pass&quot; type=&quot;password&quot;&gt;<br />
 			 &nbsp;&nbsp;&nbsp;&lt;input name=&quot;auth_voucher&quot; type=&quot;text&quot;&gt;<br />
 			 &nbsp;&nbsp;&nbsp;&lt;input name=&quot;redirurl&quot; type=&quot;hidden&quot; value=&quot;$PORTAL_REDIRURL$&quot;&gt;<br />
+			 &nbsp;&nbsp;&nbsp;&lt;input name=&quot;zone&quot; type=&quot;hidden&quot; value=&quot;$PORTAL_ZONE$&quot;&gt;<br />
 			 &nbsp;&nbsp;&nbsp;&lt;input name=&quot;accept&quot; type=&quot;submit&quot; value=&quot;Continue&quot;&gt;<br />
 			 &lt;/form&gt;')->addClass('btn btn-info btn-sm');
 
@@ -1131,8 +1108,8 @@ $section->addInput(new Form_Input(
 	'Auth error page contents',
 	'file',
 	$pconfig['errfile']
-))->setHelp('The contents of the HTML/PHP file that you upload here are displayed when an authentication error occurs. ' .
-			'You may include "$PORTAL_MESSAGE$", which will be replaced by the error or reply messages from the RADIUS ' .
+))->setHelp('The contents of the HTML/PHP file that is uploaded here are displayed when an authentication error occurs. ' .
+			'It may include "$PORTAL_MESSAGE$", which will be replaced by the error or reply messages from the RADIUS ' .
 			'server, if any.')->addClass('btn btn-info btn-sm');
 
 if ($pconfig['page']['errtext']) {
@@ -1165,7 +1142,7 @@ $section->addInput(new Form_Input(
 	'Logout page contents',
 	'file',
 	$pconfig['logoutfile']
-))->setHelp('The contents of the HTML/PHP file that you upload here are displayed on authentication success when the logout popup is enabled.')->addClass('btn btn-info btn-sm');
+))->setHelp('The contents of the HTML/PHP file that is uploaded here are displayed on authentication success when the logout popup is enabled.')->addClass('btn btn-info btn-sm');
 
 if ($pconfig['page']['logouttext']) {
 	$group = new Form_Group('Current Logout Page');
@@ -1201,7 +1178,7 @@ $section->addInput(new Form_Input(
 $form->add($section);
 print($form);
 
-print_info_box(gettext('Don\'t forget to enable the DHCP server on your captive portal interface! ' .
+print_info_box(gettext('Don\'t forget to enable the DHCP server on the captive portal interface! ' .
 					   'Make sure that the default/maximum DHCP lease time is higher than the hard timeout entered on this page. ' .
 					   'Also, the DNS Forwarder or Resolver must be enabled for DNS lookups by unauthenticated clients to work.'));
 
@@ -1248,6 +1225,7 @@ events.push(function() {
 		hideInput('idletimeout', hide);
 		hideInput('timeout', hide);
 		hideInput('freelogins_count', hide);
+		hideInput('freelogins_resettimeout', hide);
 		hideCheckbox('freelogins_updatetimeouts', hide);
 		hideCheckbox('logoutwin_enable', hide);
 		hideInput('preauthurl', hide);

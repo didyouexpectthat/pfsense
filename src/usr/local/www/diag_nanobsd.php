@@ -1,56 +1,22 @@
 <?php
 /*
-	diag_nanobsd.php
-*/
-/* ====================================================================
- *  Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * diag_nanobsd.php
  *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met:
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *  1. Redistributions of source code must retain the above copyright notice,
- *      this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  2. Redistributions in binary form must reproduce the above copyright
- *      notice, this list of conditions and the following disclaimer in
- *      the documentation and/or other materials provided with the
- *      distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  3. All advertising materials mentioning features or use of this software
- *      must display the following acknowledgment:
- *      "This product includes software developed by the pfSense Project
- *       for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *  4. The names "pfSense" and "pfSense Project" must not be used to
- *       endorse or promote products derived from this software without
- *       prior written permission. For written permission, please contact
- *       coreteam@pfsense.org.
- *
- *  5. Products derived from this software may not be called "pfSense"
- *      nor may "pfSense" appear in their names without prior written
- *      permission of the Electric Sheep Fencing, LLC.
- *
- *  6. Redistributions of any form whatsoever must retain the following
- *      acknowledgment:
- *
- *  "This product includes software developed by the pfSense Project
- *  for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *  THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *  EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *  ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *  STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *  OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  ====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -100,7 +66,7 @@ if ($_POST['destslice'] && $_POST['duplicateslice']) {
 	$statusmsg = gettext("Duplicating slice.  Please wait, this will take a moment...");
 
 	if (!DEBUG && nanobsd_clone_slice($_POST['destslice'])) {
-		$savemsg = gettext("The slice has been duplicated.") . "<p/>" . gettext("If you would like to boot from this newly duplicated slice please set it using the bootup information area.");
+		$savemsg = gettext("The slice has been duplicated.") . "<p/>" . gettext("To boot from this newly duplicated slice set it using the bootup information area.");
 		$class = 'alert-success';
 	} else {
 		$savemsg = gettext("There was an error while duplicating the slice. Operation aborted.");
@@ -174,11 +140,13 @@ if ($mounted_rw) {
 	/* refcount_read returns -1 when shared memory section does not exist */
 	/* refcount can be zero here when the user has set nanobsd_force_rw */
 	/* refcount 1 is normal, so only display the count for abnormal values */
+	/*
 	if ($refcount == 1 || $refcount == 0 || $refcount == -1) {
 		$refdisplay = "";
 	} else {
 		$refdisplay = " ". sprintf(gettext("(Reference count %s)"), $refcount);
 	}
+	*/
 	$lbl = gettext("Read/Write") . $refdisplay;
 	$btnlbl = gettext("Switch to Read-Only");
 } else {
@@ -188,6 +156,7 @@ if ($mounted_rw) {
 
 // Only show the changero button if force read/write is off, or the file system is not in writable state, or there is an unusual refcount.
 // If force read/write is on, and the file system is in writable state, and refcount is normal then the user has no reason to mess about.
+/*
 if (!isset($config['system']['nanobsd_force_rw']) || !$mounted_rw || ($refcount > 1)) {
 	$robtn = new Form_Button(
 		'changero',
@@ -198,12 +167,14 @@ if (!isset($config['system']['nanobsd_force_rw']) || !$mounted_rw || ($refcount 
 	$robtn->addClass(($mounted_rw) ? 'btn-success' : 'btn-warning' . ' btn-sm');
 	$lbl .= ' ' . $robtn;
 }
-
+*/
 $section->addInput(new Form_StaticText(
 	'Read/Write status',
 	$lbl
-))->setHelp('This setting is only temporary, and can be switched dynamically in the background.');
+))->setHelp('NanoBSD is now always read-write to avoid read-write to read-only mount problems.');
+//))->setHelp('This setting is only temporary, and can be switched dynamically in the background.');
 
+/*
 $section->addInput(new Form_Checkbox(
 	'nanobsd_force_rw',
 	'Permanent Read/Write',
@@ -223,6 +194,7 @@ $section->addInput(new Form_StaticText(
 	null,
 	$permbtn
 ));
+*/
 
 $section->addInput(new Form_Input(
 	'destslice',
@@ -242,7 +214,7 @@ $dupbtn->addClass('btn-success btn-sm');
 $section->addInput(new Form_StaticText(
 	'Duplicate boot slice',
 	$dupbtn
-))->setHelp('This will duplicate the bootup slice to the alternate slice.  Use this if you would like to duplicate the known good working boot partition to the alternate.');
+))->setHelp('This will duplicate the bootup slice to the alternate slice.  Use this to duplicate the known good working boot partition to the alternate.');
 
 $section->addInput(new Form_StaticText(
 	'RRD/DHCP Backup',
@@ -271,15 +243,10 @@ if (file_exists("/conf/upgrade_log.txt") && $_POST['viewupgradelog']) {
 	<div class="panel panel-default">
 		<div class="panel-heading"><h2 class="panel-title"><?=gettext("Previous Upgrade Log")?></h2></div>
 			<!-- No white space between the <pre> and the first output or it will appear on the page! -->
-			<pre><?=str_ireplace("pfsense", $g['product_name'], file_get_contents("/conf/upgrade_log.txt"))?>
-				<br /><?=gettext("File list:")?>
-				<?=str_ireplace("pfsense", $g['product_name'], file_get_contents("/conf/file_upgrade_log.txt"))?>
-				<br /><?=gettext("Misc log:")?>
-				<?=str_ireplace("pfsense", $g['product_name'], file_get_contents("/conf/firmware_update_misc_log.txt"))?>
-				<br /><?=gettext("fdisk/bsdlabel log:")?>
-				<?=str_ireplace("pfsense", $g['product_name'], file_get_contents("/conf/fdisk_upgrade_log.txt"))?>
+			<pre>
+				<?=str_ireplace("pfsense", $g['product_name'], file_get_contents("/conf/upgrade_log.txt"))?>
 			</pre>
 	</div>
 <?php
 }
-require("foot.inc");
+require_once("foot.inc");

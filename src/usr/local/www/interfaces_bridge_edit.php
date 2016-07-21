@@ -1,56 +1,22 @@
 <?php
 /*
-	interfaces_bridge_edit.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * interfaces_bridge_edit.php
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -60,18 +26,33 @@
 ##|*MATCH=interfaces_bridge_edit.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 
 if (!is_array($config['bridges']['bridged'])) {
 	$config['bridges']['bridged'] = array();
 }
 
 function is_aoadv_used($pconfig) {
-        if (isset($pconfig['static']) || isset($pconfig['private']) || isset($pconfig['stp']) || isset($pconfig['span']) || isset($pconfig['edge']) || isset($pconfig['autoedge']) || isset($pconfig['ptp']) || isset($pconfig['autoptp']) || isset($pconfig['maxaddr']) || isset($pconfig['timeout']) || isset($pconfig['maxage']) || isset($pconfig['fwdelay']) || isset($pconfig['hellotime']) || isset($pconfig['priority']) || isset($pconfig['proto']) || isset($pconfig['holdcnt'])) {
-                return true;
-        }
+	if (($pconfig['static'] !="") ||
+	    ($pconfig['private'] != "") ||
+	    ($pconfig['stp'] != "") ||
+	    ($pconfig['span'] != "") ||
+	    ($pconfig['edge'] != "") ||
+	    ($pconfig['autoedge'] != "") ||
+	    ($pconfig['ptp'] != "") ||
+	    ($pconfig['autoptp'] != "") ||
+	    ($pconfig['maxaddr'] != "") ||
+	    ($pconfig['timeout'] != "") ||
+	    ($pconfig['maxage'] != "") ||
+	    ($pconfig['fwdelay'] != "") ||
+	    ($pconfig['hellotime'] != "") ||
+	    ($pconfig['priority'] != "") ||
+	    (($pconfig['proto'] != "") && ($pconfig['proto'] != "rstp")) ||
+	    ($pconfig['holdcnt'] != "")) {
+		return true;
+	}
 
-        return false;
+	return false;
 }
 
 $a_bridges = &$config['bridges']['bridged'];
@@ -204,7 +185,7 @@ if ($_POST) {
 	}
 
 	if (!is_array($_POST['members']) || count($_POST['members']) < 1) {
-		$input_errors[] = gettext("You must select at least one member interface for a bridge.");
+		$input_errors[] = gettext("At least one member interface must be selected for a bridge.");
 	}
 
 	if (is_array($_POST['static'])) {
@@ -420,7 +401,7 @@ $section->addInput(new Form_Select(
 	$memberslist['selected'],
 	$memberslist['list'],
 	true // Allow multiples
-))->setHelp('Interfaces participating in the bridge');
+))->setHelp('Interfaces participating in the bridge.');
 
 $section->addInput(new Form_Input(
 	'descr',
@@ -429,39 +410,40 @@ $section->addInput(new Form_Input(
 	$pconfig['descr']
 ));
 
-$showadvanced = is_aoadv_used($pconfig);
+// Advanced Additional options
+$btnadv = new Form_Button(
+	'btnadvopts',
+	'Display Advanced',
+	null,
+	'fa-cog'
+);
 
-$section->addInput(new Form_Checkbox(
-	'showadvanced',
-	'Advanced',
-	'Show advanced options',
-	$showadvanced
-))->toggles('.toggle-advanced');
+$btnadv->setAttribute('type','button')->addClass('btn-info btn-sm');
+
+$section->addInput(new Form_StaticText(
+	'Advanced Options',
+	$btnadv
+));
 
 $form->add($section);
 
 $section = new Form_Section('Advanced Configuration');
 
-// Set initial toggle state manually for now
-if ($showadvanced) {
-	$section->addClass('toggle-advanced in');
-} else {
-	$section->addClass('toggle-advanced collapse');
-}
+$section->addClass('adnlopts');
 
 $section->addInput(new Form_Input(
 	'maxaddr',
 	'Cache Size',
 	'text',
 	$pconfig['maxaddr']
-))->setHelp('Set the size of the bridge address cache. The default is 2000 entries');
+))->setHelp('Set the size of the bridge address cache. The default is 2000 entries.');
 
 $section->addInput(new Form_Input(
 	'timeout',
 	'Cache expire time',
 	'text',
 	$pconfig['timeout']
-))->setHelp('Set the timeout of address cache entries to this number of seconds. If seconds is zero, then address cache entries will not be expired. The default is 1200 seconds');
+))->setHelp('Set the timeout of address cache entries to this number of seconds. If seconds is zero, then address cache entries will not be expired. The default is 1200 seconds.');
 
 $spanlist = build_port_list($pconfig['span']);
 
@@ -471,7 +453,7 @@ $section->addInput(new Form_Select(
 	$spanlist['selected'],
 	$spanlist['list'],
 	true
-))->setHelp('Add the interface named by interface as a span port on the bridge. Span ports transmit a copy of every frame received by the bridge.' .
+))->setHelp('Add the interface named by interface as a span port on the bridge. Span ports transmit a copy of every frame received by the bridge. ' .
 			'This is most useful for snooping a bridged network passively on another host connected to one of the span ports of the bridge. <br />' .
 			'%sThe span interface cannot be part of the bridge member interfaces.%s', ['<strong>', '</strong>']);
 
@@ -550,11 +532,7 @@ $section->addInput(new Form_Checkbox(
 // Show the spanning tree section
 $form->add($section);
 $section = new Form_Section('RSTP/STP');
-if ($showadvanced) {
-	$section->addClass('toggle-advanced in');
-} else {
-	$section->addClass('toggle-advanced collapse');
-}
+$section->addClass('adnlopts');
 
 $section->addInput(new Form_Select(
 	'proto',
@@ -572,7 +550,7 @@ $section->addInput(new Form_Select(
 	$edgelist['selected'],
 	$edgelist['list'],
 	true
-))->setHelp('Enable Spanning Tree Protocol on interface. The if_bridge(4) driver has support for the IEEE 802.1D Spanning Tree Protocol (STP).' .
+))->setHelp('Enable Spanning Tree Protocol on interface. The if_bridge(4) driver has support for the IEEE 802.1D Spanning Tree Protocol (STP). ' .
 			'STP is used to detect and remove loops in a network topology.');
 
 $section->addInput(new Form_Input(
@@ -597,13 +575,13 @@ $section->addInput(new Form_Input(
 	'number',
 	$pconfig['hellotime'],
 	['placeholder' => 2, 'min' => 1, 'max' => 2, 'step' => '0.1']
-))->setHelp('Set the time in seconds between broadcasting of Spanning Tree Protocol configuration messages. The hello time may only be changed when operating in legacy STP mode.' .
+))->setHelp('Set the time in seconds between broadcasting of Spanning Tree Protocol configuration messages. The hello time may only be changed when operating in legacy STP mode. ' .
 			'The default is 2 seconds. The minimum is 1 second and the maximum is 2 seconds.');
 
 $section->addInput(new Form_Input(
 	'priority',
 	'Priority',
-	'text',
+	'number',
 	$pconfig['priority'],
 	['placeholder' => 32768, 'min' => 0, 'max' => 61440]
 ))->setHelp('Set the bridge priority for Spanning Tree. The default is 32768. The minimum is 0 and the maximum is 61440. ');
@@ -657,5 +635,43 @@ if (isset($id) && $a_bridges[$id]) {
 
 $form->add($section);
 print($form);
+?>
+<script type="text/javascript">
+//<![CDATA[
+events.push(function() {
 
-include("foot.inc");
+	// Show advanced additional opts options ======================================================
+	var showadvopts = false;
+
+	function show_advopts(ispageload) {
+		var text;
+		// On page load decide the initial state based on the data.
+		if (ispageload) {
+			showadvopts = <?php if (is_aoadv_used($pconfig)) {echo 'true';} else {echo 'false';} ?>;
+		} else {
+			// It was a click, swap the state.
+			showadvopts = !showadvopts;
+		}
+
+		hideClass('adnlopts', !showadvopts);
+
+		if (showadvopts) {
+			text = "<?=gettext('Hide Advanced');?>";
+		} else {
+			text = "<?=gettext('Display Advanced');?>";
+		}
+		$('#btnadvopts').html('<i class="fa fa-cog"></i> ' + text);
+	}
+
+	$('#btnadvopts').click(function(event) {
+		show_advopts();
+	});
+
+	// ---------- On initial page load ------------------------------------------------------------
+
+	show_advopts(true);
+});
+//]]>
+</script>
+
+<?php include("foot.inc");

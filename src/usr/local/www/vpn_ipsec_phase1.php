@@ -1,60 +1,27 @@
 <?php
 /*
-	vpn_ipsec_phase1.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
- *	Copyright (c)  2008 Shrew Soft Inc
+ * vpn_ipsec_phase1.php
  *
- *	Some or all of this file is based on the m0n0wall project which is
- *	Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * Copyright (c) 2008 Shrew Soft Inc
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -64,8 +31,8 @@
 ##|*MATCH=vpn_ipsec_phase1.php*
 ##|-PRIV
 
-require("functions.inc");
-require("guiconfig.inc");
+require_once("functions.inc");
+require_once("guiconfig.inc");
 require_once("ipsec.inc");
 require_once("vpn.inc");
 require_once("filter.inc");
@@ -273,9 +240,9 @@ if ($_POST) {
 		if (!is_ipaddr($pconfig['remotegw']) && !is_domain($pconfig['remotegw'])) {
 			$input_errors[] = gettext("A valid remote gateway address or host name must be specified.");
 		} elseif (is_ipaddrv4($pconfig['remotegw']) && ($pconfig['protocol'] != "inet")) {
-			$input_errors[] = gettext("A valid remote gateway IPv4 address must be specified or you need to change protocol to IPv6");
+			$input_errors[] = gettext("A valid remote gateway IPv4 address must be specified or protocol needs to be changed to IPv6");
 		} elseif (is_ipaddrv6($pconfig['remotegw']) && ($pconfig['protocol'] != "inet6")) {
-			$input_errors[] = gettext("A valid remote gateway IPv6 address must be specified or you need to change protocol to IPv4");
+			$input_errors[] = gettext("A valid remote gateway IPv6 address must be specified or protocol needs to be changed to IPv4");
 		}
 	}
 
@@ -296,11 +263,11 @@ if ($_POST) {
 		foreach ($a_phase2 as $phase2) {
 			if ($phase2['ikeid'] == $pconfig['ikeid']) {
 				if (($pconfig['protocol'] == "inet") && ($phase2['mode'] == "tunnel6")) {
-					$input_errors[] = gettext("There is a Phase 2 using IPv6, you cannot use IPv4.");
+					$input_errors[] = gettext("There is a Phase 2 using IPv6, cannot use IPv4.");
 					break;
 				}
 				if (($pconfig['protocol'] == "inet6") && ($phase2['mode'] == "tunnel")) {
-					$input_errors[] = gettext("There is a Phase 2 using IPv4, you cannot use IPv6.");
+					$input_errors[] = gettext("There is a Phase 2 using IPv4, cannot use IPv6.");
 					break;
 				}
 			}
@@ -424,6 +391,10 @@ if ($_POST) {
 		$input_errors[] = gettext("Valid arguments for IKE type are v1, v2 or auto");
 	}
 
+	if (preg_match("/aes\d+gcm/", $_POST['ealgo']) && $_POST['iketype'] != "ikev2") {
+		$input_errors[] = gettext("Encryption Algorithm AES-GCM can only be used with IKEv2");
+	}
+
 	if (!empty($_POST['ealgo']) && isset($config['system']['crypto_hardware'])) {
 		if ($config['system']['crypto_hardware'] == "glxsb") {
 			if ($_POST['ealgo'] == "aes" && $_POST['ealgo_keylen'] != "128") {
@@ -455,7 +426,7 @@ if ($_POST) {
 	if (!$input_errors) {
 		$ph1ent['ikeid'] = $pconfig['ikeid'];
 		$ph1ent['iketype'] = $pconfig['iketype'];
-		if ($pconfig['iketype'] != 'ikev1') {
+		if ($pconfig['iketype'] == 'ikev2') {
 			unset($ph1ent['mode']);
 		} else {
 			$ph1ent['mode'] = $pconfig['mode'];
@@ -662,10 +633,8 @@ function build_eal_list() {
 
 if ($pconfig['mobile']) {
 	$pgtitle = array(gettext("VPN"), gettext("IPsec"), gettext("Mobile Clients"), gettext("Edit Phase 1"));
-	$editing_mobile = true;
 } else {
 	$pgtitle = array(gettext("VPN"), gettext("IPsec"), gettext("Tunnels"), gettext("Edit Phase 1"));
-	$editing_mobile = false;
 }
 
 $shortcut_section = "ipsec";
@@ -677,8 +646,8 @@ if ($input_errors) {
 }
 
 $tab_array = array();
-$tab_array[] = array(gettext("Tunnels"), !$editing_mobile, "vpn_ipsec.php");
-$tab_array[] = array(gettext("Mobile Clients"), $editing_mobile, "vpn_ipsec_mobile.php");
+$tab_array[] = array(gettext("Tunnels"), true, "vpn_ipsec.php");
+$tab_array[] = array(gettext("Mobile Clients"), false, "vpn_ipsec_mobile.php");
 $tab_array[] = array(gettext("Pre-Shared Keys"), false, "vpn_ipsec_keys.php");
 $tab_array[] = array(gettext("Advanced Settings"), false, "vpn_ipsec_settings.php");
 display_top_tabs($tab_array);
@@ -721,7 +690,7 @@ if (!$pconfig['mobile']) {
 		'Remote Gateway',
 		'text',
 		$pconfig['remotegw']
-	))->setHelp('Enter the public IP address or host name of the remote gateway');
+	))->setHelp('Enter the public IP address or host name of the remote gateway.');
 }
 
 $section->addInput(new Form_Input(
@@ -729,7 +698,7 @@ $section->addInput(new Form_Input(
 	'Description',
 	'text',
 	$pconfig['descr']
-))->setHelp('You may enter a description here for your reference (not parsed).');
+))->setHelp('A description may be entered here for administrative reference (not parsed).');
 
 $form->add($section);
 
@@ -795,7 +764,7 @@ $section->addInput(new Form_Input(
 	'Pre-Shared Key',
 	'text',
 	$pconfig['pskey']
-))->setHelp('Enter your Pre-Shared Key string.');
+))->setHelp('Enter the Pre-Shared Key string.');
 
 $section->addInput(new Form_Select(
 	'certref',
@@ -1136,17 +1105,17 @@ events.push(function() {
 	//});
 
 	 // Peer identifier
-	$('#peerid_type').click(function () {
+	$('#peerid_type').change(function () {
 		peeridsel_change();
 	});
 
 	 // My identifier
-	$('#myid_type').click(function () {
+	$('#myid_type').change(function () {
 		myidsel_change();
 	});
 
 	 // ike type
-	$('#iketype').click(function () {
+	$('#iketype').change(function () {
 		iketype_change();
 	});
 
@@ -1156,7 +1125,7 @@ events.push(function() {
 	});
 
 	 // authentication method
-	$('#ealgo').click(function () {
+	$('#ealgo').change(function () {
 		ealgosel_change(<?=$keyset?>);
 	});
 

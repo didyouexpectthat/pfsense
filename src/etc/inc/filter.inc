@@ -1,61 +1,29 @@
 <?php
 /*
-	filter.inc
-
-	part of pfSense (https://www.pfsense.org)
-	Copyright (c) 2005 Bill Marquette
-	Copyright (c) 2006 Peter Allgeyer
-	Copyright (c) 2008-2016 Electric Sheep Fencing, LLC. All rights reserved.
-
-	originally part of m0n0wall (http://m0n0.ch/wall)
-	Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
-	All rights reserved.
-
-	Redistribution and use in source and binary forms, with or without
-	modification, are permitted provided that the following conditions are met:
-
-	1. Redistributions of source code must retain the above copyright notice,
-	   this list of conditions and the following disclaimer.
-
-	2. Redistributions in binary form must reproduce the above copyright
-	   notice, this list of conditions and the following disclaimer in
-	   the documentation and/or other materials provided with the
-	   distribution.
-
-	3. All advertising materials mentioning features or use of this software
-	   must display the following acknowledgment:
-	   "This product includes software developed by the pfSense Project
-	   for use in the pfSense® software distribution. (http://www.pfsense.org/).
-
-	4. The names "pfSense" and "pfSense Project" must not be used to
-	   endorse or promote products derived from this software without
-	   prior written permission. For written permission, please contact
-	   coreteam@pfsense.org.
-
-	5. Products derived from this software may not be called "pfSense"
-	   nor may "pfSense" appear in their names without prior written
-	   permission of the Electric Sheep Fencing, LLC.
-
-	6. Redistributions of any form whatsoever must retain the following
-	   acknowledgment:
-
-	"This product includes software developed by the pfSense Project
-	for use in the pfSense software distribution (http://www.pfsense.org/).
-
-	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
-	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
-	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
-	OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-
+ * filter.inc
+ *
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2005 Bill Marquette
+ * Copyright (c) 2006 Peter Allgeyer
+ * Copyright (c) 2008-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
+ *
+ * originally part of m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /* holds the items that will be executed *AFTER* the filter is fully loaded */
 $after_filter_configure_run = array();
@@ -850,7 +818,8 @@ function filter_generate_aliases() {
 				// TODO: Change it when pf supports tables with ports
 				$urlfn = alias_expand_urltable($aliased['name']);
 				if ($urlfn) {
-					$aliases .= "{$aliased['name']} = \"{ " . preg_replace("/\n/", " ", file_get_contents($urlfn)) . " }\"\n";
+					$ports_tmp = parse_aliases_file($urlfn, "urltable_ports", "-1", false);
+					$aliases .= "{$aliased['name']} = \"{ " . preg_replace("/\n/", " ", implode("\n", $ports_tmp)) . " }\"\n";
 				}
 				break;
 			case "port":
@@ -904,6 +873,7 @@ function filter_generate_gateways() {
 			$route = "";
 			/* hey, that's not a group member! */
 			unset($members['ipprotocol']);
+			unset($members['descr']);
 			if (count($members) > 0) {
 				$foundlb = 0;
 				$routeto = "";
@@ -1906,6 +1876,7 @@ function filter_nat_rules_generate() {
 			}
 
 			$natif = $FilterIflist[$natif]['if'];
+			$nat_if_list = array();
 
 			if (isset($rule['nobinat'])) {
 				$natrules .= "no binat on {$natif} from {$srcaddr} to {$dstaddr}\n";
@@ -1917,8 +1888,6 @@ function filter_nat_rules_generate() {
 				if ((isset($config['system']['enablebinatreflection']) || $rule['natreflection'] == "enable") &&
 				    ($rule['natreflection'] != "disable")) {
 					$nat_if_list = filter_get_reflection_interfaces($natif);
-				} else {
-					$nat_if_list = array();
 				}
 
 				$natrules .= "binat on {$natif} from {$srcaddr} to {$dstaddr} -> {$target}{$sn1}\n";
@@ -2569,6 +2538,7 @@ function filter_generate_address(& $rule, $target = "source", $isnat = false) {
 						$src = "(self)";
 						break;
 					case 'pppoe':
+						/* XXX: This needs to be fixed somehow! */
 						if (is_array($FilterIflist['pppoe'])) {
 							$pppoesav6 = gen_subnetv6($FilterIflist['pppoe'][0]['ipv6'], $FilterIflist['pppoe'][0]['snv6']);
 							$pppoesnv6 = $FilterIflist['pppoe'][0]['snv6'];
@@ -2608,7 +2578,7 @@ function filter_generate_address(& $rule, $target = "source", $isnat = false) {
 					case 'pppoe':
 						/* XXX: This needs to be fixed somehow! */
 						if (is_array($FilterIflist['pppoe'])) {
-							$pppoesa = gen_subnet($FilterIflist['pppoe'][0]['ip'], $FilterIflist['pppoe'][0]['sn']);
+							$pppoesa = gen_subnet($FilterIflist['pppoe'][0]['sa'], $FilterIflist['pppoe'][0]['sn']);
 							$pppoesn = $FilterIflist['pppoe'][0]['sn'];
 							$src = "{$pppoesa}/{$pppoesn}";
 						}
@@ -2666,7 +2636,11 @@ function filter_generate_user_rule($rule) {
 			$ifliste = "";
 			foreach ($interfaces as $iface) {
 				if (array_key_exists($iface, $FilterIflist)) {
-					$ifliste .= " " . $FilterIflist[$iface]['if'] . " ";
+					if (isset($FilterIflist[$iface]['if'])) {
+						$ifliste .= " " . $FilterIflist[$iface]['if'] . " ";
+					} else if (isset($FilterIflist[$iface][0]['if'])) {
+						$ifliste .= " " . $FilterIflist[$iface][0]['if'] . " ";
+					}
 				}
 			}
 			if ($ifliste <> "") {
@@ -2902,11 +2876,9 @@ function filter_generate_user_rule($rule) {
 		 *	# keep state
 		 *		works with TCP, UDP, and ICMP.
 		 *	# modulate state
-		 *		works only with TCP. pfSense will generate strong Initial Sequence Numbers (ISNs)
-		 *		for packets matching this rule.
+		 *		deprecated
 		 *	# synproxy state
 		 *		proxies incoming TCP connections to help protect servers from spoofed TCP SYN floods.
-		 *		This option includes the functionality of keep state and modulate state combined.
 		 *	# none
 		 *		do not use state mechanisms to keep track. this is only useful if your doing advanced
 		 *		queueing in certain situations. please check the faq.
@@ -3359,7 +3331,6 @@ EOD;
 			case "pptp":
 				$ipfrules .= <<<EOD
 # allow PPTP client
-pass in {$log['pass']} on \${$oc['descr']} proto tcp from any to any port = 1723 flags S/SA modulate state tracker {$increment_tracker($tracker)} label "{$fix_rule_label("allow PPTP client on {$oc['descr']}")}"
 pass in {$log['pass']} on \${$oc['descr']} proto gre from any to any keep state tracker {$increment_tracker($tracker)} label "{$fix_rule_label("allow PPTP client on {$oc['descr']}")}"
 
 EOD;
@@ -4254,7 +4225,7 @@ function ifridx($if, $ridx) {
 	if ($ridx < 0) {
 		return $ridx;
 	}
-	
+
 	$i = $ifridx = 0;
 	if (is_array($config['filter']['rule'])) {
 		foreach ($config['filter']['rule'] as $rulen => $filterent) {

@@ -1,57 +1,27 @@
 <?php
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
- *	Copyright (c)  2005-2006 Bill Marquette <bill.marquette@gmail.com>
- *	Copyright (c)  2006 Paul Taylor <paultaylor@winn-dixie.com>.
- *	Copyright (c)  2003-2006 Manuel Kasper <mk@neon1.net>.
+/*
+ * authgui.inc
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2003-2006 Manuel Kasper <mk@neon1.net>
+ * Copyright (c) 2005-2006 Bill Marquette <bill.marquette@gmail.com>
+ * Copyright (c) 2006 Paul Taylor <paultaylor@winn-dixie.com>
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 include_once("auth.inc");
 include_once("priv.inc");
 if (!function_exists('platform_booting')) {
@@ -70,6 +40,11 @@ if (!session_auth()) {
  * the user or group privileges.
  */
 $allowedpages = getAllowedPages($_SESSION['Username'], $_SESSION['user_radius_attributes']);
+
+/*
+ * Get user-based preference settings so they can be easily referenced.
+ */
+$user_settings = get_user_settings($_SESSION['Username']);
 
 /*
  * redirect to first allowed page if requesting a wrong url
@@ -123,20 +98,20 @@ session_commit();
  * determine if the user is allowed access to the requested page
  */
 function display_error_form($http_code, $desc) {
-	global $config, $g;
+	global $config, $user_settings, $g;
 
 	if (isAjax()) {
 		printf(gettext('Error: %1$s Description: %2$s'), $http_code, $desc);
 		return;
 	}
 
-	$cssfile = "/bootstrap/css/pfSense.css";
+	$cssfile = "/css/pfSense.css";
 
-	if (isset($config['system']['webgui']['webguicss'])) {
-	if (file_exists("bootstrap/css/" . $config['system']['webgui']['webguicss'])) {
-		$cssfile = "/bootstrap/css/" . $config['system']['webgui']['webguicss'];
+	if (isset($user_settings['webgui']['webguicss'])) {
+		if (file_exists("/usr/local/www/css/" . $user_settings['webgui']['webguicss'])) {
+			$cssfile = "/css/" . $user_settings['webgui']['webguicss'];
+		}
 	}
-}
 
 ?>
 <!DOCTYPE html>
@@ -234,11 +209,14 @@ if ($local_ip == false) {
 	}
 }
 
-$cssfile = "/bootstrap/css/pfSense.css";
+// For the login form, get the settings of no particular user.
+// That ensures we will use the system default theme for the login form.
+$user_settings = get_user_settings("");
+$cssfile = "/css/pfSense.css";
 
-if (isset($config['system']['webgui']['webguicss'])) {
-	if (file_exists("bootstrap/css/" . $config['system']['webgui']['webguicss'])) {
-		$cssfile = "/bootstrap/css/" . $config['system']['webgui']['webguicss'];
+if (isset($user_settings['webgui']['webguicss'])) {
+	if (file_exists("/usr/local/www/css/" . $user_settings['webgui']['webguicss'])) {
+		$cssfile = "/css/" . $user_settings['webgui']['webguicss'];
 	}
 }
 
@@ -262,7 +240,7 @@ if (isset($config['system']['webgui']['webguicss'])) {
 <?php
 	if (is_ipaddr($http_host) && !$local_ip && !isset($config['system']['webgui']['nohttpreferercheck'])) {
 		$nifty_background = "#999";
-		print_info_box(gettext("You are accessing this router by an IP address not configured locally, which may be forwarded by NAT or other means. <br /><br />If you did not setup this forwarding, you may be the target of a man-in-the-middle attack."));
+		print_info_box(gettext("The IP address being used to access this router is not configured locally, which may be forwarded by NAT or other means. <br /><br />If this forwarding is unexpected, it should be verified that a man-in-the-middle attack is not taking place."));
 	}
 
 	$loginautocomplete = isset($config['system']['webgui']['loginautocomplete']) ? '' : 'autocomplete="off"';
@@ -277,7 +255,7 @@ if (isset($config['system']['webgui']['webguicss'])) {
 <?php if (!empty($_SESSION['Login_Error'])): ?>
 						<div class="alert alert-danger" role="alert"><?=$_SESSION['Login_Error'];?></div>
 <?php endif ?>
-						<div class="alert alert-warning hidden" id="no_cookies"><?= gettext("Your browser must support cookies to login."); ?></div>
+						<div class="alert alert-warning hidden" id="no_cookies"><?= gettext("The browser must support cookies to login."); ?></div>
 
 						<form method="post" <?= $loginautocomplete ?> action="<?=$_SERVER['SCRIPT_NAME'];?>" class="form-horizontal">
 							<div class="form-group">
@@ -323,6 +301,6 @@ if (isset($config['system']['webgui']['webguicss'])) {
 		//]]>
 		</script>
 <?php
-require('foot.inc');
+require_once('foot.inc');
 
 } // end function

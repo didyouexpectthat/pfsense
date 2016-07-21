@@ -1,59 +1,26 @@
 <?php
 /*
-	guiconfig.inc
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
+ * guiconfig.inc
  *
- *  Some or all of this file is based on the m0n0wall project which is
- *  Copyright (c)  2004 Manuel Kasper (BSD 2 clause)
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * All rights reserved.
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * originally based on m0n0wall (http://m0n0.ch/wall)
+ * Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>.
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /* Include authentication routines */
@@ -310,7 +277,7 @@ function verify_gzip_file($fname) {
 // print_info_box() has been updated so that any required button is explicitly created, rather than relying on the detection of certain
 // strings in the message (such as "apply"). print_info_box_np() has been exterminated.
 // $class = the bootstrap style class (default, info, warning, success, danger)
-// $btnname and btntext describe the optional button and its display text, the default is an 'x' Close button. 
+// $btnname and btntext describe the optional button and its display text, the default is an 'x' Close button.
 // Note that there is also a shortcut function print_apply_box here that creates a standard "apply" box for you.
 // In many cases just substitute that for print_info_box_np() to easily get a warning style "Apply changes" box.
 function print_info_box($msg, $class="alert-warning", $btnname = "close", $btntext = "", $btnicon = "", $btnclass = "default") {
@@ -384,7 +351,7 @@ function get_std_save_message($ok) {
 		}
 	}
 	if ($filter_related) {
-		$to_return .= "<br />" . gettext("You can also <a href=\"status_filter_reload.php\">monitor</a> the filter reload progress.");
+		$to_return .= "<br />" . gettext("<a href=\"status_filter_reload.php\">Monitor</a> the filter reload progress.");
 	}
 	return $to_return;
 }
@@ -817,7 +784,7 @@ function display_widget_tabs(& $tab_array) {
 function outputJavaScriptFileInline($javascript) {
 	if (file_exists($javascript)) {
 		echo "\n<script type=\"text/javascript\">\n";
-		include($javascript);
+		include_once($javascript);
 		echo "\n</script>\n";
 	} else {
 		echo "\n\n<!-- Could not locate file:  {$javascript} -->\n\n";
@@ -829,7 +796,7 @@ function outputJavaScriptFileInline($javascript) {
 function outputCSSPrintFileInline($css) {
 	if (file_exists($css)) {
 		echo "\n<style media=\"print\" type=\"text/css\">\n";
-		include($css);
+		include_once($css);
 		echo "\n</style>\n";
 	} else {
 		echo "\n\n<!-- Could not locate file:  {$css} -->\n\n";
@@ -840,7 +807,7 @@ function outputCSSPrintFileInline($css) {
 function outputCSSFileInline($css) {
 	if (file_exists($css)) {
 		echo "\n<style type=\"text/css\">\n";
-		include($css);
+		include_once($css);
 		echo "\n</style>\n";
 	} else {
 		echo "\n\n<!-- Could not locate file:  {$css} -->\n\n";
@@ -1112,7 +1079,7 @@ function alias_info_popup($alias_id) {
 			$content .= 			$ap;
 			$content .=	"		</td>\n";
 			$content .= "		<td style='padding-left: 10px;'>\n";
-			$content .= 			$alias_details[$idx];
+			$content .= 			htmlspecialchars($alias_details[$idx]);
 			$content .=	"		</td>\n";
 			$content .= "	</tr>\n";
 			$idx++;
@@ -1129,7 +1096,7 @@ function alias_info_popup($alias_id) {
 	return $content;
 }
 
-function rule_columns_with_alias($src, $srcport, $dst, $dstport) {
+function rule_columns_with_alias($src, $srcport, $dst, $dstport, $target="", $targetport="") {
 	global $config;
 
 	if ($config['aliases']['alias'] == "" || !is_array($config['aliases']['alias'])) {
@@ -1149,6 +1116,12 @@ function rule_columns_with_alias($src, $srcport, $dst, $dstport) {
 		}
 		if ($alias_name['name'] == $dstport) {
 			$columns['dstport'] = $alias_id;
+		}
+		if ($alias_name['name'] == $target) {
+			$columns['target'] = $alias_id;
+		}
+		if ($alias_name['name'] == $targetport) {
+			$columns['targetport'] = $alias_id;
 		}
 	}
 

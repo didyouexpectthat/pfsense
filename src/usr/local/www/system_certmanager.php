@@ -1,57 +1,23 @@
 <?php
 /*
-	system_certmanager.php
-*/
-/* ====================================================================
- *	Copyright (c)  2004-2015  Electric Sheep Fencing, LLC. All rights reserved.
- *	Copyright (c)  2008 Shrew Soft Inc.
+ * system_certmanager.php
  *
- *	Redistribution and use in source and binary forms, with or without modification,
- *	are permitted provided that the following conditions are met:
+ * part of pfSense (https://www.pfsense.org)
+ * Copyright (c) 2004-2016 Electric Sheep Fencing, LLC
+ * Copyright (c) 2008 Shrew Soft Inc
+ * All rights reserved.
  *
- *	1. Redistributions of source code must retain the above copyright notice,
- *		this list of conditions and the following disclaimer.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *	2. Redistributions in binary form must reproduce the above copyright
- *		notice, this list of conditions and the following disclaimer in
- *		the documentation and/or other materials provided with the
- *		distribution.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *	3. All advertising materials mentioning features or use of this software
- *		must display the following acknowledgment:
- *		"This product includes software developed by the pfSense Project
- *		 for use in the pfSense software distribution. (http://www.pfsense.org/).
- *
- *	4. The names "pfSense" and "pfSense Project" must not be used to
- *		 endorse or promote products derived from this software without
- *		 prior written permission. For written permission, please contact
- *		 coreteam@pfsense.org.
- *
- *	5. Products derived from this software may not be called "pfSense"
- *		nor may "pfSense" appear in their names without prior written
- *		permission of the Electric Sheep Fencing, LLC.
- *
- *	6. Redistributions of any form whatsoever must retain the following
- *		acknowledgment:
- *
- *	"This product includes software developed by the pfSense Project
- *	for use in the pfSense software distribution (http://www.pfsense.org/).
- *
- *	THIS SOFTWARE IS PROVIDED BY THE pfSense PROJECT ``AS IS'' AND ANY
- *	EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *	PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE pfSense PROJECT OR
- *	ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *	NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- *	HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- *	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- *	OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *	====================================================================
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 ##|+PRIV
@@ -61,7 +27,7 @@
 ##|*MATCH=system_certmanager.php*
 ##|-PRIV
 
-require("guiconfig.inc");
+require_once("guiconfig.inc");
 require_once("certs.inc");
 
 $cert_methods = array(
@@ -70,13 +36,13 @@ $cert_methods = array(
 	"external" => gettext("Create a Certificate Signing Request"),
 );
 
-$cert_keylens = array("512", "1024", "2048", "4096");
+$cert_keylens = array("512", "1024", "2048", "3072", "4096", "7680", "8192", "15360", "16384");
 $cert_types = array(
 	"server" => "Server Certificate",
 	"user" => "User Certificate");
 
 $altname_types = array("DNS", "IP", "email", "URI");
-$openssl_digest_algs = array("sha1", "sha224", "sha256", "sha384", "sha512");
+$openssl_digest_algs = array("sha1", "sha224", "sha256", "sha384", "sha512", "whirlpool");
 
 if (is_numericint($_GET['userid'])) {
 	$userid = $_GET['userid'];
@@ -342,7 +308,7 @@ if ($_POST) {
 						break;
 					case "email":
 						if (empty($altname['value'])) {
-							array_push($input_errors, "You must provide an e-mail address for this type of subjectAltName");
+							array_push($input_errors, "An e-mail address must be provided for this type of subjectAltName");
 						}
 						if (preg_match("/[\!\#\$\%\^\(\)\~\?\>\<\&\/\\\,\"\']/", $altname['value'])) {
 							array_push($input_errors, "The e-mail provided in a subjectAltName contains invalid characters.");
@@ -392,12 +358,6 @@ if ($_POST) {
 			if (($pconfig['method'] == "external") && !in_array($_POST["csr_digest_alg"], $openssl_digest_algs)) {
 				array_push($input_errors, gettext("Please select a valid Digest Algorithm."));
 			}
-		}
-
-		/* if this is an AJAX caller then handle via JSON */
-		if (isAjax() && is_array($input_errors)) {
-			input_errors2Ajax($input_errors);
-			exit;
 		}
 
 		/* save modifications */
@@ -532,12 +492,6 @@ if ($_POST) {
 			$subject_mismatch = true;
 		}
 
-		/* if this is an AJAX caller then handle via JSON */
-		if (isAjax() && is_array($input_errors)) {
-			input_errors2Ajax($input_errors);
-			exit;
-		}
-
 		/* save modifications */
 		if (!$input_errors) {
 
@@ -651,9 +605,10 @@ if ($act == "new" || (($_POST['save'] == gettext("Save")) && $input_errors)) {
 	if (!$internal_ca_count) {
 		$section->addInput(new Form_StaticText(
 			'Certificate authority',
-			gettext('No internal Certificate Authorities have been defined. You must ').
-			'<a href="system_camanager.php?act=new&amp;method=internal"> '. gettext(" create") .'</a>'.
-			gettext(' an internal CA before creating an internal certificate.')
+			gettext('No internal Certificate Authorities have been defined. ').
+			gettext('An internal CA must be defined in order to create an internal certificate. ').
+			'<a href="system_camanager.php?act=new&amp;method=internal"> '. gettext("Create") .'</a>'.
+			gettext(' an internal CA.')
 		));
 	} else {
 		$allCas = array();
@@ -926,14 +881,14 @@ if ($act == "new" || (($_POST['save'] == gettext("Save")) && $input_errors)) {
 		$pconfig['csr']
 	))->setReadonly()
 	  ->setWidth(7)
-	  ->setHelp('Copy the certificate signing data from here and forward it to your certificate authority for signing.');
+	  ->setHelp('Copy the certificate signing data from here and forward it to a certificate authority for signing.');
 
 	$section->addInput(new Form_Textarea(
 		'cert',
 		'Final certificate data',
 		$pconfig['cert']
 	))->setWidth(7)
-	  ->setHelp('Paste the certificate received from your certificate authority here.');
+	  ->setHelp('Paste the certificate received from the certificate authority here.');
 
 	 if (isset($id) && $a_cert[$id]) {
 		 $section->addInput(new Form_Input(
